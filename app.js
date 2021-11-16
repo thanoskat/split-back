@@ -2,8 +2,6 @@ const express = require('express')
 const app = express()
 const mongoose = require('mongoose')
 const config = require('dotenv').config().parsed
-// require('dotenv').config()
-// const config = process.env
 const cors = require('cors')
 
 //Connect To DB
@@ -12,9 +10,9 @@ mongoose.connect(
   () => console.log('Connected to DB!'))
 
 //Import Routes
-const postsRoute = require('./routes/postsRoute')
 const authRoute = require('./routes/authRoute')
 const getUsersRoute = require('./routes/getUsersRoute')
+const groupsRoutes = require('./routes/groupsRoutes')
 
 //Middleware
 app.use(cors(
@@ -27,7 +25,7 @@ app.use(cors(
 app.use(express.json())
 app.use('/auth', authRoute)
 app.use('/getusers', getUsersRoute)
-app.use('/posts', postsRoute)
+app.use('/groups', groupsRoutes)
 
 //ROUTES
 app.get('/', (req, res) => {
