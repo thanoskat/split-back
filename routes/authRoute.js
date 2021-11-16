@@ -39,7 +39,7 @@ router.get('/v/:token', async (req, res) => {
       userId: decoded.userId,
       createdAt: Date.now()
     })
-    const savedSession = await session.save()
+    await session.save()
     const accessToken = generateAccessToken(decoded.userId)
     res.setHeader('Set-Cookie', cookie.serialize('refreshToken', refreshToken, { httpOnly: true, path: '/auth/refreshtoken' }))
     res.send({ accessToken: accessToken, sessionID: session.toObject()._id.toString() })
@@ -64,7 +64,7 @@ router.post('/sendlink', async (req, res) => {
   }
 })
 
-router.get('/refreshtoken', async (req, res) => {
+router.get('/refreshtoken', async (req, res) => { //generates new access token
   try{
     // Getting refresh token from httponly cookie.
     const refreshToken = cookie.parse(req.headers.cookie).refreshToken
@@ -88,7 +88,7 @@ router.get('/refreshtoken', async (req, res) => {
     const newRefreshToken = generateRefreshToken()
     await sessionModel.findByIdAndUpdate(sessionFound.toObject()._id, { refreshToken: newRefreshToken, previousRefreshToken: refreshToken }).exec()
     res.setHeader('Set-Cookie', cookie.serialize('refreshToken', newRefreshToken, { httpOnly: true, path: '/auth/refreshtoken' }))
-    const newAccessToken = generateAccessToken(sessionFound.userId)
+    const newAccessToken = generateAccessToken(sessionFound.userId) //generates new access token
     res.send({ accessToken: newAccessToken })
   }
   catch(error){
