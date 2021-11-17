@@ -4,7 +4,7 @@ const mongoose = require('mongoose')
 const config = require('dotenv').config().parsed
 const cors = require('cors')
 // comment added
-// second comment added
+
 //Connect To DB
 mongoose.connect(
   config.DB_CONNECTION,
