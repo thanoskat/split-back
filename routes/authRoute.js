@@ -31,6 +31,11 @@ router.post('/signup', async (req, res) => {
 })
 
 router.get('/v/:token', async (req, res) => {
+  //router is ran when magic link that is sent to user is clicked
+  //decodes magic link that was sent, creates session,refresh and access tokens
+  //and adds them to user's local storage.
+  //access token and refresh token are required for sign in function in AuthenticationContext
+  //with this get and post on line 59 verification is over.
   try {
     const decoded = jwt.verify(req.params.token, config.MAGICLINK_SECRET)
     const refreshToken = generateRefreshToken()
@@ -71,7 +76,7 @@ router.get('/refreshtoken', async (req, res) => { //generates new access token
     if(!refreshToken) return res.status(400).send("Refresh cookie not found.")
     // Checking if session exists in db.
     const sessionFound = await sessionModel.findOne({ refreshToken: refreshToken })
-    if(!sessionFound) return res.status(401).send("Ses.sion not found.")
+    if(!sessionFound) return res.status(401).send("Session not found.")
     // Checking if refresh token has been revoked.
     if(sessionFound.toObject().revoked == true) return res.status(401).send("Refresh token has been revoked.")
     // Cheching if refresh token has been used before.

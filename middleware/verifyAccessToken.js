@@ -7,8 +7,9 @@ const verifyAccessToken = (req, res, next) =>{
   const authHeader = req.headers['authorization']
   const token = authHeader.split(' ')[1]
   try{
-    const decoded = jwt.verify(token, config.ACCESS_TOKEN_SECRET)
+    jwt.verify(token, config.ACCESS_TOKEN_SECRET)
     next()
+    
   }
   catch(error){
     if(error.name == "TokenExpiredError"){

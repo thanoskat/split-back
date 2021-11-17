@@ -1,6 +1,7 @@
 const { isEmail } = require('validator')
 const mongoose = require('mongoose')
 
+
 const emailUnique = async (email) => {
   const emailCount = await mongoose.models.Users.countDocuments({ email: email })
   return !emailCount
@@ -31,7 +32,8 @@ const userSchema = new mongoose.Schema({
   date: {
     type: Date,
     default: Date.now()
-  }
+  },
+  groups :[{type:mongoose.Types.ObjectId, ref: 'Group' }]
 })
 
 // userSchema.path('email').validate(async (email) => {
