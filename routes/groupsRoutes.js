@@ -29,6 +29,7 @@ router.post("/creategroup", verifyAccessToken, async (req, res)=>{
     }
 })
 
+
 //ADD USER TO GROUP. ASSESS IF USER ALREADY EXISTS AND EXIT, OTHERWISE ADD
 router.post("/addusertogroup/:groupID/:personID", async (req, res)=>{  
     //takes a group id and adds a person to group
