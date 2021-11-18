@@ -5,6 +5,8 @@ const Users = require('../models/userModel')
 const mongoose=require("mongoose");
 const toId = mongoose.Types.ObjectId; //builds object from string ID
 const verifyAccessToken = require('../middleware/verifyAccessToken')
+const jwt = require('jsonwebtoken')
+const config = process.env
 //1423qrwe
 
 //CREATE GROUP WITH USER'S ID. DON'T HAVE TO WORRY ABOUT MULTIPLE GROUPS
@@ -57,17 +59,18 @@ router.delete("/deletegroup/:groupID", async (req, res)=>{
 })
 
 //Works for id in schema
-router.delete("/del/:groupID", async (req,res)=>{
-    const groupID=toId(req.params.groupID)
-    const personID=toId("61927bbfa5dd5fe206f4571c")
-    try {
-        removal  = await Users.updateOne({_id:personID},{$pull:{groups:{_id:groupID}}})
-        console.log(removal)
-        res.json(removal)
-    }catch(err){
-        res.json({message:err});
-    }
-})
+// router.delete("/del/:groupID", async (req,res)=>{
+//     const groupID=toId(req.params.groupID)
+//     const personID=toId("61927bbfa5dd5fe206f4571c")
+//     try {
+//         removal  = await Users.updateOne({_id:personID},{$pull:{groups:{_id:groupID}}})
+//         console.log(removal)
+//         res.json(removal)
+//     }catch(err){
+//         res.json({message:err});
+//     }
+// })
+
 
 //GIVEN USER ID GET GROUPS THEY BELONG TO
 router.get("/groupsinuserID/:userID", async (req, res)=>{
