@@ -14,11 +14,7 @@ const config = process.env
 
 router.post("/creategroup", verifyAccessToken, async (req, res) => {
   try{
-
-    //takes a person id and creates group
-    const authHeader = req.headers['authorization']
-    const token = authHeader.split(' ')[1]
-    const creatorID = toId(jwt.verify(token,config.ACCESS_TOKEN_SECRET).userId)
+    const creatorID = toId(jwt.verify(req.accessToken,config.ACCESS_TOKEN_SECRET).userId)
     const group = new groupModel({
       creator: creatorID,
       title: req.body.title
