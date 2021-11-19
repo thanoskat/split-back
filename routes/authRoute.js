@@ -85,7 +85,7 @@ router.get('/refreshtoken', async (req, res) => { //generates new access token
       return res.status(401).send("Refresh token used twice. Revoking token.")
     }
     // Checking if session is expired.
-    if((sessionFound.toObject().createdAt.getTime() + 6 * 60 * 1000) < Date.now()) {
+    if((sessionFound.toObject().createdAt.getTime() + 60 * 60 * 1000) < Date.now()) {
       await sessionModel.findByIdAndUpdate(sessionFound.toObject()._id, { revoked: true }).exec()
       return res.status(401).send("Session is expired.")
     }
