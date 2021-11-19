@@ -43,10 +43,10 @@ router.get("/deletegroups", async (req, res) => {
 
 
 //ADD USER TO GROUP. ASSESS IF USER ALREADY EXISTS AND EXIT, OTHERWISE ADD
-router.post("/addUserToGroup/:groupID/:userID", async (req, res)=>{
+router.post("/addUserToGroup", verifyAccessToken, async (req, res)=>{
     //takes a group id and adds a person to group
-    const userID = (toId(req.params.userID));
-    const groupID = (toId(req.params.groupID));
+    const userID = toId(req.body.userID);          //(toId(req.params.userID));
+    const groupID = toId(req.body.groupID);       //(toId(req.params.groupID));
 
     try{
         addUserToGroup(groupID, userID)
