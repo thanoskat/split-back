@@ -127,4 +127,15 @@ router.get('/clearsessions', async (req, res) => {
   }
 })
 
+router.get('/clearusers', async (req, res) => {
+  try {
+    await userModel.deleteMany({})
+    console.log("User collection cleared.")
+    res.sendStatus(200)
+  }
+  catch(error) {
+    res.send(error)
+  }
+})
+
 module.exports = router

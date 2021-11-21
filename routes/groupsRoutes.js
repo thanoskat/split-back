@@ -81,6 +81,18 @@ router.delete("/deletegroup/:groupID", async (req, res)=>{
 //     }
 // })
 
+router.get("/mygroups", verifyAccessToken, async (req, res) => {
+  const userID = toId(jwt.verify(req.accessToken,config.ACCESS_TOKEN_SECRET).userId)
+  const groups = await userModel.findById(userID).populate("groups", "title").exec()
+  // console.log(JSON.stringify(groups.groups, null, 2))
+  res.send(groups.groups)
+})
+
+router.get("/group/:groupID", verifyAccessToken, async (req, res) => {
+  const group = await groupModel.findById(req.params.groupID)
+  // console.log(JSON.stringify(group, null, 2))
+  res.send(group)
+})
 
 //GIVEN USER ID GET GROUPS THEY BELONG TO
 router.get("/groupsinuserID/:userID", async (req, res)=>{
