@@ -6,12 +6,13 @@ const verifyAccessToken = (req, res, next) =>{
   if (!req.headers['authorization']) return res.sendStatus(401)
   const authHeader = req.headers['authorization']
   const token = authHeader.split(' ')[1]
-  try{
-    jwt.verify(token, config.ACCESS_TOKEN_SECRET)
+  try {
+    const userId = jwt.verify(token, config.ACCESS_TOKEN_SECRET).userId
     req.accessToken = token
+    req.userId = userId
     next()
   }
-  catch(error){
+  catch(error) {
     if(error.name == "TokenExpiredError"){
       res.status(401).send("TokenExpiredError!!")
     }
