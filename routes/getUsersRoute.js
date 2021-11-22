@@ -18,13 +18,11 @@ router.get('/', verifyAccessToken, async (req, res) => {
 
 router.get('/profile', verifyAccessToken, async (req, res) => {
 
-  const authHeader = req.headers['authorization']
-  const token = authHeader.split(' ')[1]
-  const decodeID = toId(jwt.verify(token,config.ACCESS_TOKEN_SECRET).userId)
+  const decodeID = toId(jwt.verify(req.accessToken ,config.ACCESS_TOKEN_SECRET).userId) //this is a userID
 
   try{
-   const user = await Users.findById({_id:decodeID})
-   console.log(user)
+   const user = await Users.findById({_id:decodeID}).populate("groups","title")
+    //console.log(user)
     res.json(user)
   }
   catch(error){

@@ -19,5 +19,5 @@ const groupSchema = mongoose.Schema({
 //const Person = mongoose.model("Person", personSchema);
 const Group = mongoose.model("Group", groupSchema);
 
- module.exports=Group;
+module.exports = Group;
 

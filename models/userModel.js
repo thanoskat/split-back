@@ -18,6 +18,7 @@ const userSchema = new mongoose.Schema({
     required: [ true, "Email is required"],
     maxLength: 255,
     validate: [
+
       { validator: emailUnique, message: "{VALUE} already exists" },
       { validator: isEmail, message: "{VALUE} is not valid" }
     ]

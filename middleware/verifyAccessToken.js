@@ -8,8 +8,8 @@ const verifyAccessToken = (req, res, next) =>{
   const token = authHeader.split(' ')[1]
   try{
     jwt.verify(token, config.ACCESS_TOKEN_SECRET)
+    req.accessToken = token
     next()
-    
   }
   catch(error){
     if(error.name == "TokenExpiredError"){
