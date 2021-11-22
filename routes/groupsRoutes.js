@@ -45,40 +45,45 @@ router.post("/removeuserfromgroup", verifyAccessToken, async (req, res) => {
   const userID = toId(req.body.userID);
   const groupID = toId(req.body.groupID);
 
-  try{
+  try {
     await groupModel.findByIdAndUpdate(groupID, { $pull: { members: userID } }).exec()
     await userModel.findByIdAndUpdate(userID, { $pull: { groups: groupID } }).exec()
     console.log(`User ${userID} removed from group ${groupID} !`)
+    res.sendStatus(200)
   }
   catch(error) {
     console.dir(error)
+    res.sendStatus(400)
   }
 })
 
 //ADD USER TO GROUP. ASSESS IF USER ALREADY EXISTS AND EXIT, OTHERWISE ADD
-router.post("/addUserToGroup", verifyAccessToken, async (req, res)=>{
-    //takes a group id and adds a person to group
-    const userID = toId(req.body.userID);          //(toId(req.params.userID));
-    const groupID = toId(req.body.groupID);       //(toId(req.params.groupID));
-
-    try{
-        addUserToGroup(groupID, userID)
-        res.json(addUserToGroup.obj)
-    }catch(err){
-        res.json({message:err})
+router.post("/addUserToGroup", verifyAccessToken, async (req, res) => {
+  //takes a group id and adds a person to group
+  const userID = toId(req.body.userID);          //(toId(req.params.userID));
+  const groupID = toId(req.body.groupID);       //(toId(req.params.groupID));
+  try {
+    if(await addUserToGroup(groupID, userID)) {
+      res.sendStatus(200)
     }
+  }
+  catch(error) {
+    console.dir(error)
+    res.sendStatus(400)
+  }
 })
 
 //DELETES GROUP AND REMOVES IT FROM USER'S ARRAY
-router.delete("/deletegroup/:groupID", async (req, res)=>{
-    const groupID = (toId(req.params.groupID));
-    try{
-        const removeGroup = await groupModel.deleteOne({_id:groupID}) //deletes group
-        const userGroupRemoval = await userModel.updateMany({/*_id:userID for specific document in collection*/},{$pull:{groups:groupID}}) //deletes group from groups of Person collection when group is deleted
-        res.json({removeGroup, userGroupRemoval})
-    }catch(err){
-        res.json({message:err});
-    }
+router.delete("/deletegroup/:groupID", async (req, res) => {
+  const groupID = (toId(req.params.groupID));
+  try {
+    const removeGroup = await groupModel.deleteOne({_id:groupID}) //deletes group
+    const userGroupRemoval = await userModel.updateMany({/*_id:userID for specific document in collection*/},{$pull:{groups:groupID}}) //deletes group from groups of Person collection when group is deleted
+    res.json({removeGroup, userGroupRemoval})
+  }
+  catch(err) {
+    res.json({message:err});
+  }
 })
 
 //Works for id in schema
@@ -136,7 +141,6 @@ const addUserToGroup = async (groupID, userID) => {
       await userModel.findByIdAndUpdate(userID, { $push: { groups: groupID } }).exec()
       console.log(`User ${userID} added in group ${groupID} !`)
     }
-
     return true
   }
   catch(error) {
