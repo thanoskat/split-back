@@ -41,6 +41,19 @@ router.get("/deletegroups", async (req, res) => {
   }
 })
 
+router.post("/removeuserfromgroup", verifyAccessToken, async (req, res) => {
+  const userID = toId(req.body.userID);
+  const groupID = toId(req.body.groupID);
+
+  try{
+    await groupModel.findByIdAndUpdate(groupID, { $pull: { members: userID } }).exec()
+    await userModel.findByIdAndUpdate(userID, { $pull: { groups: groupID } }).exec()
+    console.log(`User ${userID} removed from group ${groupID} !`)
+  }
+  catch(error) {
+    console.dir(error)
+  }
+})
 
 //ADD USER TO GROUP. ASSESS IF USER ALREADY EXISTS AND EXIT, OTHERWISE ADD
 router.post("/addUserToGroup", verifyAccessToken, async (req, res)=>{
@@ -89,7 +102,7 @@ router.get("/mygroups", verifyAccessToken, async (req, res) => {
 })
 
 router.get("/group/:groupID", verifyAccessToken, async (req, res) => {
-  const group = await groupModel.findById(req.params.groupID)
+  const group = await groupModel.findById(req.params.groupID).populate("members", "nickname")
   // console.log(JSON.stringify(group, null, 2))
   res.send(group)
 })
