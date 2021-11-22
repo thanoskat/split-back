@@ -20,7 +20,7 @@ router.post("/creategroup", verifyAccessToken, async (req, res) => {
       title: req.body.title
     })
     const savedGroup = await group.save();
-    addUserToGroup(group._id,creatorID) //creators are automatically members of group they create
+    await addUserToGroup(group._id,creatorID) //creators are automatically members of group they create
     // console.dir("savedgroup")
     // res.json(savedgroup);
     res.sendStatus(200)
@@ -83,6 +83,20 @@ router.delete("/deletegroup/:groupID", async (req, res) => {
   }
   catch(err) {
     res.json({message:err});
+  }
+})
+
+router.post("/deletegroup", verifyAccessToken, async (req, res) => {
+  const groupId = (toId(req.body.groupId));
+  try {
+    await userModel.updateMany({ /*_id:userID for specific document in collection*/ }, { $pull: { groups:groupId } }).exec() //deletes group from groups of Person collection when group is deleted
+    await groupModel.deleteOne({ _id: groupId}).exec() //deletes group
+    console.log(`Group ${req.body.groupId} deleted successfully !`)
+    res.sendStatus(200)
+  }
+  catch(error) {
+    console.dir(error)
+    res.sendStatus(500)
   }
 })
 
