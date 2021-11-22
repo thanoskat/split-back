@@ -14,6 +14,7 @@ mongoose.connect(
 const authRoute = require('./routes/authRoute')
 const getUsersRoute = require('./routes/getUsersRoute')
 const groupsRoutes = require('./routes/groupsRoutes')
+const userInfoRoute = require('./routes/userInfoRoute')
 
 //Middleware
 app.use(cors(
@@ -22,10 +23,11 @@ app.use(cors(
     credentials: true,
     origin: 'http://localhost:3000'
   }
-  ))
+))
 app.use(express.json())
 app.use('/auth', authRoute)
 app.use('/getusers', getUsersRoute)
+app.use('/userinfo', userInfoRoute)
 app.use('/groups', groupsRoutes)
 
 //ROUTES
