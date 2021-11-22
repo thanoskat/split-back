@@ -22,7 +22,7 @@ router.get('/profile', verifyAccessToken, async (req, res) => {
 
   try{
    const user = await Users.findById({_id:decodeID}).populate("groups","title")
-    console.log(user)
+    //console.log(user)
     res.json(user)
   }
   catch(error){
