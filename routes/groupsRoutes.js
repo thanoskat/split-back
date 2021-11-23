@@ -2,6 +2,7 @@ const express=require("express");
 const router=express.Router();
 const groupModel = require("../models/groupModel")
 const userModel = require('../models/userModel')
+const requestsModel =require("../models/requestsModel")
 const mongoose=require("mongoose");
 const toId = mongoose.Types.ObjectId; //builds object from string ID
 const verifyAccessToken = require('../middleware/verifyAccessToken')
@@ -60,17 +61,26 @@ router.post("/removeuserfromgroup", verifyAccessToken, async (req, res) => {
 //ADD USER TO GROUP. ASSESS IF USER ALREADY EXISTS AND EXIT, OTHERWISE ADD
 router.post("/addUserToGroup", verifyAccessToken, async (req, res) => {
   //takes a group id and adds a person to group
-  const userID = toId(req.body.userID);          //(toId(req.params.userID));
-  const groupID = toId(req.body.groupID);       //(toId(req.params.groupID));
-  try {
-    if(await addUserToGroup(groupID, userID)) {
-      res.sendStatus(200)
+  const userID = toId(req.body.userID);  //ID of user to be added
+  const groupID = toId(req.body.groupID);  //ID of group that user will be added to
+  const creatorID = toId(req.queryUserId) //id of user who;s adding someone to group
+  const ownGroups = await groupModel.find({creator:creatorID}).exec(); //groups created by person who's adding to group
+
+  if(await groupModel.countDocuments({creator:creatorID,_id:groupID}).exec()){
+    try {
+      if(await addUserToGroup(groupID, userID)) {
+        res.sendStatus(200)
+      }
     }
-  }
-  catch(error) {
-    console.dir(error)
+    catch(error) {
+      console.dir(error)
+      res.sendStatus(400)
+    }
+  }else{
+    console.log("Can't add user to not owned group")
     res.sendStatus(400)
   }
+  //look into request schema for userID to see if request is pending  
 })
 
 //DELETES GROUP AND REMOVES IT FROM USER'S ARRAY
@@ -98,6 +108,15 @@ router.delete("/deletegroup/:groupID", async (req, res) => {
 //         res.json({message:err});
 //     }
 // })
+
+// FINDS GROUP CREATED BY USER
+router.get("/groupsbycreator",verifyAccessToken, async (req, res)=>{
+  const creatorID = toId(jwt.verify(req.accessToken,config.ACCESS_TOKEN_SECRET).userId)
+  const groups = await groupModel.find({creator:creatorID}).exec()
+  console.log(groups)
+  res.send(groups)
+})
+
 
 router.get("/mygroups", verifyAccessToken, async (req, res) => {
   const userID = toId(jwt.verify(req.accessToken,config.ACCESS_TOKEN_SECRET).userId)
