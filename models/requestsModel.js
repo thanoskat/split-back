@@ -13,8 +13,10 @@ const addToGroupRequestSchema = mongoose.Schema({
     status:{
         type: Number,
         required: true
-    } 
-     });
+    },
+    groupToJoin:{type:mongoose.Types.ObjectId, ref: 'Group' },
+
+    });
 
 
 const requestsModel = mongoose.model("GroupRequest", addToGroupRequestSchema);

@@ -22,7 +22,6 @@ const userSchema = new mongoose.Schema({
       { validator: emailUnique, message: "{VALUE} already exists" },
       { validator: isEmail, message: "{VALUE} is not valid" }
     ]
-
   },
   // password: {
   //   type: String,
@@ -34,7 +33,10 @@ const userSchema = new mongoose.Schema({
     type: Date,
     default: Date.now()
   },
-  groups :[{type:mongoose.Types.ObjectId, ref: 'Group' }]
+
+  groups :[{type:mongoose.Types.ObjectId, ref: 'Group' }],
+  requests:[{type:mongoose.Types.ObjectId, ref: 'GroupRequest' }]
+
 })
 
 // userSchema.path('email').validate(async (email) => {

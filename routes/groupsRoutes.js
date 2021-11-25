@@ -31,6 +31,44 @@ router.post("/creategroup", verifyAccessToken, async (req, res) => {
   }
 })
 
+//CREATES NEW GROUP REQUEST
+router.post("/creategrouprequest", verifyAccessToken, async(req,res)=>{
+ 
+  try{
+    //tests if request has already been sent
+    const requestsFound = await requestsModel.countDocuments({
+      requester:toId (req.queryUserId),
+      recipient:req.body.recipient,
+      status:0,
+      groupToJoin:req.body.groupToJoin }).exec()
+
+    if(requestsFound) {
+      console.log(`request to join group with ID ${req.body.groupToJoin} already sent and is pending with status ${0}`)
+      return res.sendStatus(200)
+    }
+    else{
+      //if request is new, creates this request
+      const newGroupRequest = new requestsModel({
+      requester: toId (req.queryUserId), //current user who's sending invitation
+      recipient:req.body.recipient,
+      status:0, //0 pending, 1 accepted, 2 declined. For new requests that should be set to 0,
+      groupToJoin:req.body.groupToJoin
+  
+    })
+      const newReq = await newGroupRequest.save();
+      await userModel.findByIdAndUpdate(req.body.recipient, { $push: { requests: newReq } }).exec()
+      return res.sendStatus(200)
+    }
+    
+
+    }catch(err){
+      console.dir(err)
+      res.json({message:err})
+  }
+})
+
+
+
 router.get("/deletegroups", async (req, res) => {
   try {
     await groupModel.deleteMany({})
@@ -64,10 +102,12 @@ router.post("/addUserToGroup", verifyAccessToken, async (req, res) => {
   const userID = toId(req.body.userID);  //ID of user to be added
   const groupID = toId(req.body.groupID);  //ID of group that user will be added to
   const creatorID = toId(req.queryUserId) //id of user who;s adding someone to group
-  const ownGroups = await groupModel.find({creator:creatorID}).exec(); //groups created by person who's adding to group
+  //const ownGroups = await groupModel.find({creator:creatorID}).exec(); //groups created by person who's adding to group
 
+  //tests if user is owner of group
   if(await groupModel.countDocuments({creator:creatorID,_id:groupID}).exec()){
     try {
+      //need to test if user has accepted request
       if(await addUserToGroup(groupID, userID)) {
         res.sendStatus(200)
       }
@@ -113,7 +153,6 @@ router.delete("/deletegroup/:groupID", async (req, res) => {
 router.get("/groupsbycreator",verifyAccessToken, async (req, res)=>{
   const creatorID = toId(jwt.verify(req.accessToken,config.ACCESS_TOKEN_SECRET).userId)
   const groups = await groupModel.find({creator:creatorID}).exec()
-  console.log(groups)
   res.send(groups)
 })
 
