@@ -67,6 +67,11 @@ router.post("/creategrouprequest", verifyAccessToken, async(req,res)=>{
   }
 })
 
+router.get('/getgrouprequests', verifyAccessToken, async (req, res) =>{
+    const userID = toId(req.queryUserId)
+    const requests = await userModel.findById(userID).populate("requests", "requester recipient groupToJoin status").exec()
+    res.send(requests)
+})
 
 
 router.get("/deletegroups", async (req, res) => {
