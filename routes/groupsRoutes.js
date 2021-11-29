@@ -6,7 +6,8 @@ const requestsModel =require("../models/requestsModel")
 const mongoose=require("mongoose");
 const toId = mongoose.Types.ObjectId; //builds object from string ID
 const verifyAccessToken = require('../middleware/verifyAccessToken')
-const jwt = require('jsonwebtoken')
+const jwt = require('jsonwebtoken');
+const { findById } = require("../models/groupModel");
 const config = process.env
 //1423qrwe
 
@@ -67,7 +68,7 @@ router.post("/creategrouprequest", verifyAccessToken, async(req,res)=>{
   }
 })
 
-router.get('/getgrouprequests', verifyAccessToken, async (req, res) =>{
+router.get('/getgrouprequests', verifyAccessToken, async (req, res) =>{  
     const userID = toId(req.queryUserId)
     const requests = await userModel.findById(userID).populate("requests", "requester recipient groupToJoin status").exec()
     res.send(requests)
@@ -107,8 +108,7 @@ router.post("/addUserToGroup", verifyAccessToken, async (req, res) => {
   const userID = toId(req.body.userID);  //ID of user to be added
   const groupID = toId(req.body.groupID);  //ID of group that user will be added to
   const creatorID = toId(req.queryUserId) //id of user who;s adding someone to group
-  //const ownGroups = await groupModel.find({creator:creatorID}).exec(); //groups created by person who's adding to group
-
+  //const ownGroups = await groupModel.find({creator:creatorID}).exec(); //groups created by person who's adding to group 
   //tests if user is owner of group
   if(await groupModel.countDocuments({creator:creatorID,_id:groupID}).exec()){
     try {
@@ -212,4 +212,52 @@ const addUserToGroup = async (groupID, userID) => {
   }
 }
 
+/////////////////////////////////Testing/////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////
+
+router.post("/updatestatus", verifyAccessToken, async(req, res)=>{
+  const status=req.body.status
+  await requestsModel.findByIdAndUpdate(req.body._id, {status})
+  res.sendStatus(200)
+})
+
+
+router.post("/addUserToGroup2", verifyAccessToken, async (req, res) => {
+  //takes a group id and adds a person to group
+  const userID = toId(req.queryUserId);  //ID of user to be added (current account that will accept request)
+  const groupID = toId(req.body.groupID);  //ID of group that user will be added to
+  const requestID=toId(req.body._id);
+  const getRquestByID = await requestsModel.findById({_id:requestID}) //toId(req.queryUserId) //id of user who's adding someone to group
+  const creatorID=getRquestByID.requester
+  const status=req.body.status;
+  await requestsModel.findByIdAndUpdate(req.body._id, {status})
+
+  //tests if user is owner of group
+  //!!!!NEED TO CHECK STATUS OF REQUEST AND THEN PROCEED
+  if(await groupModel.countDocuments({creator:creatorID,_id:groupID}).exec()){
+    try {
+      //need to test if user has accepted request
+      if(await addUserToGroup(groupID, userID)) {
+        res.sendStatus(200)
+      }
+    }
+    catch(error) {
+      console.dir(error)
+      res.sendStatus(400)
+    }
+  }else{
+    console.log("Can't add user to not owned group")
+    res.sendStatus(400)
+  }
+})
+
+
+/////////////////////////////////End of Testing/////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////
 module.exports=router;
