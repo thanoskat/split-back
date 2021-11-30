@@ -7,7 +7,7 @@ const mongoose=require("mongoose");
 const toId = mongoose.Types.ObjectId; //builds object from string ID
 const verifyAccessToken = require('../middleware/verifyAccessToken')
 const jwt = require('jsonwebtoken');
-const { findById } = require("../models/groupModel");
+const { findById, deleteOne } = require("../models/groupModel");
 const config = process.env
 //1423qrwe
 
@@ -42,10 +42,17 @@ router.post("/creategrouprequest", verifyAccessToken, async(req,res)=>{
       recipient:req.body.recipient,
       status:0,
       groupToJoin:req.body.groupToJoin }).exec()
+    //need to test if user has previously accepted similar request hence already member of group request is 
+    //about to be sent
+    const membersFounder =  await groupModel.find({_id:req.body.groupToJoin})
+    const foundOne = membersFounder[0].members.find(e=>e==req.body.recipient) //is there a better way to do this?
 
     if(requestsFound) {
       console.log(`request to join group with ID ${req.body.groupToJoin} already sent and is pending with status ${0}`)
       return res.sendStatus(200)
+    }
+    if(foundOne){
+      console.log(`Already member of group with ID ${req.body.groupToJoin}`)
     }
     else{
       //if request is new, creates this request
@@ -218,11 +225,23 @@ const addUserToGroup = async (groupID, userID) => {
 /////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////
 
-router.post("/updatestatus", verifyAccessToken, async(req, res)=>{
-  const status=req.body.status
-  const request = await requestsModel.findByIdAndUpdate(req.body._id, {status})
-  console.log(request.status)
-  res.sendStatus(200)
+// router.post("/updatestatus", verifyAccessToken, async(req, res)=>{
+//   const status=req.body.status
+//   const request = await requestsModel.findByIdAndUpdate(req.body._id, {status})
+//   console.log(request.status)
+//   res.sendStatus(200)
+// })
+
+//DELETES REQUEST AFTER USER HAS DECLINED IT
+router.post('/deleterequest', verifyAccessToken, async(req, res)=>{
+  try{
+    await requestsModel.deleteOne({_id:req.body._id})
+    console.log("deleted request with id", req.body._id )
+    res.sendStatus(200)
+  }
+    catch(err){
+    res.sendStatus(400)
+    }
 })
 
 
@@ -241,7 +260,7 @@ router.post("/addUserToGroup2", verifyAccessToken, async (req, res) => {
     try {
       //need to test if user has accepted request
       if(await addUserToGroup(groupID, userID)) {
-         await requestsModel.deleteOne({_id:requestID}) //deletes request
+         await requestsModel.deleteOne({_id:requestID}) //deletes request from requests schema
          await userModel.updateMany({},{$pull:{requests:requestID}})//deletes request from user's schema 
          res.sendStatus(200)
       }
