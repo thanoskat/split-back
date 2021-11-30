@@ -220,7 +220,8 @@ const addUserToGroup = async (groupID, userID) => {
 
 router.post("/updatestatus", verifyAccessToken, async(req, res)=>{
   const status=req.body.status
-  await requestsModel.findByIdAndUpdate(req.body._id, {status})
+  const request = await requestsModel.findByIdAndUpdate(req.body._id, {status})
+  console.log(request.status)
   res.sendStatus(200)
 })
 
@@ -230,18 +231,19 @@ router.post("/addUserToGroup2", verifyAccessToken, async (req, res) => {
   const userID = toId(req.queryUserId);  //ID of user to be added (current account that will accept request)
   const groupID = toId(req.body.groupID);  //ID of group that user will be added to
   const requestID=toId(req.body._id);
-  const getRquestByID = await requestsModel.findById({_id:requestID}) //toId(req.queryUserId) //id of user who's adding someone to group
+  const getRquestByID = await requestsModel.findById({_id:requestID}) //id of request
   const creatorID=getRquestByID.requester
   const status=req.body.status;
   await requestsModel.findByIdAndUpdate(req.body._id, {status})
 
-  //tests if user is owner of group
-  //!!!!NEED TO CHECK STATUS OF REQUEST AND THEN PROCEED
-  if(await groupModel.countDocuments({creator:creatorID,_id:groupID}).exec()){
+  //tests if user is owner of group and whether status is pending
+  if(await groupModel.countDocuments({creator:creatorID,_id:groupID}).exec() && getRquestByID.status===0){
     try {
       //need to test if user has accepted request
       if(await addUserToGroup(groupID, userID)) {
-        res.sendStatus(200)
+         await requestsModel.deleteOne({_id:requestID}) //deletes request
+         await userModel.updateMany({},{$pull:{requests:requestID}})//deletes request from user's schema 
+         res.sendStatus(200)
       }
     }
     catch(error) {
@@ -253,7 +255,6 @@ router.post("/addUserToGroup2", verifyAccessToken, async (req, res) => {
     res.sendStatus(400)
   }
 })
-
 
 /////////////////////////////////End of Testing/////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////
