@@ -34,7 +34,7 @@ router.post("/creategroup", verifyAccessToken, async (req, res) => {
 
 //CREATES NEW GROUP REQUEST
 router.post("/creategrouprequest", verifyAccessToken, async(req,res)=>{
- 
+
   try{
     //tests if request has already been sent
     const requestsFound = await requestsModel.countDocuments({
@@ -42,10 +42,16 @@ router.post("/creategrouprequest", verifyAccessToken, async(req,res)=>{
       recipient:req.body.recipient,
       status:0,
       groupToJoin:req.body.groupToJoin }).exec()
-    //need to test if user has previously accepted similar request hence already member of group request is 
+    //need to test if user has previously accepted similar request hence already member of group request is
     //about to be sent
-    const membersFounder =  await groupModel.find({_id:req.body.groupToJoin})
-    const foundOne = membersFounder[0].members.find(e=>e==req.body.recipient) //is there a better way to do this?
+    // const membersFounder =  await groupModel.find({_id:req.body.groupToJoin})
+    // const foundOne = membersFounder[0].members.find(e=>e==req.body.recipient) //is there a better way to do this?
+    const foundOne = await groupModel.countDocuments(
+      {
+        _id: req.body.groupToJoin,
+        members: req.body.recipient
+      }).exec()
+    console.log(foundOne)
 
     if(requestsFound) {
       console.log(`request to join group with ID ${req.body.groupToJoin} already sent and is pending with status ${0}`)
@@ -61,13 +67,13 @@ router.post("/creategrouprequest", verifyAccessToken, async(req,res)=>{
       recipient:req.body.recipient,
       status:0, //0 pending, 1 accepted, 2 declined. For new requests that should be set to 0,
       groupToJoin:req.body.groupToJoin
-  
+
     })
       const newReq = await newGroupRequest.save();
       await userModel.findByIdAndUpdate(req.body.recipient, { $push: { requests: newReq } }).exec()
       return res.sendStatus(200)
     }
-    
+
 
     }catch(err){
       console.dir(err)
@@ -75,7 +81,7 @@ router.post("/creategrouprequest", verifyAccessToken, async(req,res)=>{
   }
 })
 
-router.get('/getgrouprequests', verifyAccessToken, async (req, res) =>{  
+router.get('/getgrouprequests', verifyAccessToken, async (req, res) =>{
     const userID = toId(req.queryUserId)
     const requests = await userModel.findById(userID).populate("requests", "requester recipient groupToJoin status").exec()
     res.send(requests)
@@ -115,7 +121,7 @@ router.post("/addUserToGroup", verifyAccessToken, async (req, res) => {
   const userID = toId(req.body.userID);  //ID of user to be added
   const groupID = toId(req.body.groupID);  //ID of group that user will be added to
   const creatorID = toId(req.queryUserId) //id of user who;s adding someone to group
-  //const ownGroups = await groupModel.find({creator:creatorID}).exec(); //groups created by person who's adding to group 
+  //const ownGroups = await groupModel.find({creator:creatorID}).exec(); //groups created by person who's adding to group
   //tests if user is owner of group
   if(await groupModel.countDocuments({creator:creatorID,_id:groupID}).exec()){
     try {
@@ -132,7 +138,7 @@ router.post("/addUserToGroup", verifyAccessToken, async (req, res) => {
     console.log("Can't add user to not owned group")
     res.sendStatus(400)
   }
-  //look into request schema for userID to see if request is pending  
+  //look into request schema for userID to see if request is pending
 })
 
 //DELETES GROUP AND REMOVES IT FROM USER'S ARRAY
@@ -261,7 +267,7 @@ router.post("/addUserToGroup2", verifyAccessToken, async (req, res) => {
       //need to test if user has accepted request
       if(await addUserToGroup(groupID, userID)) {
          await requestsModel.deleteOne({_id:requestID}) //deletes request from requests schema
-         await userModel.updateMany({},{$pull:{requests:requestID}})//deletes request from user's schema 
+         await userModel.updateMany({},{$pull:{requests:requestID}})//deletes request from user's schema
          res.sendStatus(200)
       }
     }
