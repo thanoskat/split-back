@@ -24,9 +24,9 @@ router.post("/creategroup", verifyAccessToken, async (req, res) => {
     // console.dir("savedgroup")
     // res.json(savedgroup);
     res.sendStatus(200)
-  }catch(err){
-    console.dir(err)
-    res.json({message:err})
+  }catch(error){
+    console.dir(error)
+    res.json({message:error})
   }
 })
 

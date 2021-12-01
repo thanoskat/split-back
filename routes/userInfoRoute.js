@@ -8,7 +8,7 @@ const toId = mongoose.Types.ObjectId;
 router.get('/:userid', verifyAccessToken, async (req, res) => {
   try {
     const user = await userModel.findById(toId(req.params.userid))
-    console.log(user)
+    // console.log(user)
     res.json(user)
   }
   catch(error) {
