@@ -18,7 +18,7 @@ router.post('/signup', async (req, res) => {
 
   try {
     const savedUser = await user.save()
-    console.log(savedUser)
+    // console.log(savedUser)
     res.send(savedUser)
   }
   catch(saveError) {
@@ -46,7 +46,7 @@ router.get('/v/:token', async (req, res) => {
     })
     await session.save()
     const accessToken = generateAccessToken(decoded.userId)
-    res.setHeader('Set-Cookie', cookie.serialize('refreshToken', refreshToken, { httpOnly: true, path: '/auth/refreshtoken' }))
+    res.setHeader('Set-Cookie', cookie.serialize('refreshToken', refreshToken, { secure: true, httpOnly: true, path: '/auth/refreshtoken' }))
     res.send({ accessToken: accessToken, sessionID: session.toObject()._id.toString() })
     // SAVE IT IN FRONTEND LOCALSTORAGE
   }
@@ -92,7 +92,7 @@ router.get('/refreshtoken', async (req, res) => { //generates new access token
     // Sending a response with a new access token.
     const newRefreshToken = generateRefreshToken()
     await sessionModel.findByIdAndUpdate(sessionFound.toObject()._id, { refreshToken: newRefreshToken, previousRefreshToken: refreshToken }).exec()
-    res.setHeader('Set-Cookie', cookie.serialize('refreshToken', newRefreshToken, { httpOnly: true, path: '/auth/refreshtoken' }))
+    res.setHeader('Set-Cookie', cookie.serialize('refreshToken', newRefreshToken, { secure: true, httpOnly: true, path: '/auth/refreshtoken' }))
     const newAccessToken = generateAccessToken(sessionFound.userId) //generates new access token
     res.send({ accessToken: newAccessToken })
   }
@@ -108,7 +108,7 @@ router.post('/signout', verifyAccessToken, async (req, res) => {
     // TODO check if userid is correct
     await sessionModel.findByIdAndUpdate(mongoose.Types.ObjectId(req.body.sessionID), { revoked: true }).exec()
     console.log("/auth/signout session revoked")
-    res.setHeader('Set-Cookie', cookie.serialize('refreshToken', ' ', { httpOnly: true, path: '/auth/refreshtoken' }))
+    res.setHeader('Set-Cookie', cookie.serialize('refreshToken', ' ', { secure:true, httpOnly: true, path: '/auth/refreshtoken' }))
     res.send("Signed out")
   }
   catch(error) {
@@ -136,6 +136,19 @@ router.get('/clearusers', async (req, res) => {
   }
   catch(error) {
     res.send(error)
+  }
+})
+
+router.get('/getuserinfo', verifyAccessToken, async (req, res) => {
+  try {
+    const user = await userModel.findById(req.userId)
+    res.send({
+      nickname: user.nickname,
+      id: user._id
+    })
+  }
+  catch(error) {
+    console.dir(error)
   }
 })
 
