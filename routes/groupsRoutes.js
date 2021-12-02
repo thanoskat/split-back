@@ -251,7 +251,7 @@ router.post("/requesthandler", verifyAccessToken, async (req, res) => {
     const groupID = getRequestModelByID.groupToJoin;  //ID of group that user will be added to
     const creatorID=getRequestModelByID.requester
     
-    await requestsModel.findByIdAndUpdate(req.body._id, {status})
+    //await requestsModel.findByIdAndUpdate(req.body._id, {status}) Updates requests schema model - not needed at the moment - could be useful if we want to keep actions in the future
   
     //tests if user is owner of group and whether status is pending
     if(!await groupModel.countDocuments({creator:creatorID,_id:groupID}).exec() ){
