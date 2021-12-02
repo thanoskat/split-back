@@ -141,7 +141,7 @@ router.get('/clearusers', async (req, res) => {
 
 router.get('/getuserinfo', verifyAccessToken, async (req, res) => {
   try {
-    const user = await userModel.findById(req.userId)
+    const user = await userModel.findById(req.queryUserId)
     res.send({
       nickname: user.nickname,
       id: user._id
