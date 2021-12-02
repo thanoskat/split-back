@@ -257,12 +257,12 @@ router.post("/requesthandler", verifyAccessToken, async (req, res) => {
     if(!await groupModel.countDocuments({creator:creatorID,_id:groupID}).exec() ){
       {
         console.log("Can't add user to not owned group")
-        res.sendStatus(400)
+        return res.sendStatus(400)
       }
     }
     if(!getRequestModelByID.status===0){
       console.log("Status is not pending")
-      res.sendStatus(400)
+      return res.sendStatus(400)
     }
     else{
       try {
@@ -270,12 +270,12 @@ router.post("/requesthandler", verifyAccessToken, async (req, res) => {
         if(await addUserToGroup(groupID, userID)) {
            await requestsModel.deleteOne({_id:requestID}) //deletes request from requests schema
            await userModel.updateMany({},{$pull:{requests:requestID}})//deletes request from user's schema
-           res.sendStatus(200)
+           return res.sendStatus(200)
         }
       }
       catch(error) {
         console.dir(error)
-        res.sendStatus(400)
+        return res.sendStatus(400)
       }
      }
     } 
