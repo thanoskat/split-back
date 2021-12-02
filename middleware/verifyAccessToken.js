@@ -9,7 +9,7 @@ const verifyAccessToken = (req, res, next) =>{
   try {
     const userId = jwt.verify(token, config.ACCESS_TOKEN_SECRET).userId
     req.accessToken = token
-    req.userId = userId
+    req.queryUserId = userId
     next()
   }
   catch(error) {
