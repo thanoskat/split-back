@@ -231,55 +231,56 @@ const addUserToGroup = async (groupID, userID) => {
 /////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////
 
-// router.post("/updatestatus", verifyAccessToken, async(req, res)=>{
-//   const status=req.body.status
-//   const request = await requestsModel.findByIdAndUpdate(req.body._id, {status})
-//   console.log(request.status)
-//   res.sendStatus(200)
-// })
-
-//DELETES REQUEST AFTER USER HAS DECLINED IT
-router.post('/deleterequest', verifyAccessToken, async(req, res)=>{
-  try{
-    await requestsModel.deleteOne({_id:req.body._id})
-    console.log("deleted request with id", req.body._id )
-    res.sendStatus(200)
-  }
-    catch(err){
-    res.sendStatus(400)
-    }
-})
-
-
-router.post("/addUserToGroup2", verifyAccessToken, async (req, res) => {
-  //takes a group id and adds a person to group
-  const userID = toId(req.queryUserId);  //ID of user to be added (current account that will accept request)
-  const groupID = toId(req.body.groupID);  //ID of group that user will be added to
-  const requestID=toId(req.body._id);
-  const getRquestByID = await requestsModel.findById({_id:requestID}) //id of request
-  const creatorID=getRquestByID.requester
+//HANDLES ACCEPT OR DECLINE
+router.post("/requesthandler", verifyAccessToken, async (req, res) => {
   const status=req.body.status;
-  await requestsModel.findByIdAndUpdate(req.body._id, {status})
+    if (status===2){ //if user declined request - delete request from model
+      try{
+        await requestsModel.deleteOne({_id:req.body._id})
+        console.log("deleted request with id", req.body._id )
+        res.sendStatus(200)
+      }
+        catch(err){
+        res.sendStatus(400)
+        }
 
-  //tests if user is owner of group and whether status is pending
-  if(await groupModel.countDocuments({creator:creatorID,_id:groupID}).exec() && getRquestByID.status===0){
-    try {
-      //need to test if user has accepted request
-      if(await addUserToGroup(groupID, userID)) {
-         await requestsModel.deleteOne({_id:requestID}) //deletes request from requests schema
-         await userModel.updateMany({},{$pull:{requests:requestID}})//deletes request from user's schema
-         res.sendStatus(200)
+  }else{ //else if user accepts add user to group
+    const userID = toId(req.queryUserId);  //ID of user to be added (current account that will accept request)
+    const requestID=toId(req.body._id); //request ID
+    const getRequestModelByID = await requestsModel.findById({_id:requestID})
+    const groupID = getRequestModelByID.groupToJoin;  //ID of group that user will be added to
+    const creatorID=getRequestModelByID.requester
+    
+    await requestsModel.findByIdAndUpdate(req.body._id, {status})
+  
+    //tests if user is owner of group and whether status is pending
+    if(!await groupModel.countDocuments({creator:creatorID,_id:groupID}).exec() ){
+      {
+        console.log("Can't add user to not owned group")
+        res.sendStatus(400)
       }
     }
-    catch(error) {
-      console.dir(error)
+    if(!getRequestModelByID.status===0){
+      console.log("Status is not pending")
       res.sendStatus(400)
     }
-  }else{
-    console.log("Can't add user to not owned group")
-    res.sendStatus(400)
+    else{
+      try {
+        //need to test if user has accepted request
+        if(await addUserToGroup(groupID, userID)) {
+           await requestsModel.deleteOne({_id:requestID}) //deletes request from requests schema
+           await userModel.updateMany({},{$pull:{requests:requestID}})//deletes request from user's schema
+           res.sendStatus(200)
+        }
+      }
+      catch(error) {
+        console.dir(error)
+        res.sendStatus(400)
+      }
+     }
+    } 
   }
-})
+)
 
 /////////////////////////////////End of Testing/////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////
