@@ -33,60 +33,51 @@ router.post("/creategroup", verifyAccessToken, async (req, res) => {
 })
 
 //CREATES NEW GROUP REQUEST
-router.post("/creategrouprequest", verifyAccessToken, async(req,res)=>{
-
-  try{
-    //tests if request has already been sent
+router.post("/creategrouprequest", verifyAccessToken, async(req,res) => {
+  try {
+    // Tests if request has already been sent
     const requestsFound = await requestsModel.countDocuments({
       requester:toId (req.queryUserId),
       recipient:req.body.recipient,
       status:0,
       groupToJoin:req.body.groupToJoin }).exec()
-    //need to test if user has previously accepted similar request hence already member of group request is
-    //about to be sent
-    // const membersFounder =  await groupModel.find({_id:req.body.groupToJoin})
-    // const foundOne = membersFounder[0].members.find(e=>e==req.body.recipient) //is there a better way to do this?
-    const foundOne = await groupModel.countDocuments(
-      {
+    const foundOne = await groupModel.countDocuments({
         _id: req.body.groupToJoin,
         members: req.body.recipient
       }).exec()
-    console.log(foundOne)
 
     if(requestsFound) {
       console.log(`request to join group with ID ${req.body.groupToJoin} already sent and is pending with status ${0}`)
       return res.sendStatus(200)
     }
-    if(foundOne){
+    if(foundOne) {
       console.log(`Already member of group with ID ${req.body.groupToJoin}`)
+      return res.sendStatus(200)
     }
-    else{
-      //if request is new, creates this request
+    else {
+      // If request is new, creates this request
       const newGroupRequest = new requestsModel({
-      requester: toId (req.queryUserId), //current user who's sending invitation
-      recipient:req.body.recipient,
-      status:0, //0 pending, 1 accepted, 2 declined. For new requests that should be set to 0,
-      groupToJoin:req.body.groupToJoin
-
-    })
+        requester: toId (req.queryUserId), //current user who's sending invitation
+        recipient:req.body.recipient,
+        status:0, //0 pending, 1 accepted, 2 declined. For new requests that should be set to 0,
+        groupToJoin:req.body.groupToJoin
+      })
       const newReq = await newGroupRequest.save();
       await userModel.findByIdAndUpdate(req.body.recipient, { $push: { requests: newReq } }).exec()
       return res.sendStatus(200)
     }
-
-
-    }catch(err){
-      console.dir(err)
-      res.json({message:err})
+  }
+  catch(error) {
+    console.dir(error)
+    res.send(error.message)
   }
 })
 
-router.get('/getgrouprequests', verifyAccessToken, async (req, res) =>{
-    const userID = toId(req.queryUserId)
-    const requests = await userModel.findById(userID).populate("requests", "requester recipient groupToJoin status").exec()
-    res.send(requests)
+router.get('/getgrouprequests', verifyAccessToken, async (req, res) => {
+  const userID = toId(req.queryUserId)
+  const requests = await userModel.findById(userID).populate("requests", "requester recipient groupToJoin status").exec()
+  res.send(requests)
 })
-
 
 router.get("/deletegroups", async (req, res) => {
   try {
@@ -264,9 +255,9 @@ router.post("/requesthandler", verifyAccessToken, async (req, res) => {
     const getRequestModelByID = await requestsModel.findById({_id:requestID})
     const groupID = getRequestModelByID.groupToJoin;  //ID of group that user will be added to
     const creatorID=getRequestModelByID.requester
-    
+
     //await requestsModel.findByIdAndUpdate(req.body._id, {status}) Updates requests schema model - not needed at the moment - could be useful if we want to keep actions in the future
-  
+
     //tests if user is owner of group and whether status is pending
     if(!await groupModel.countDocuments({creator:creatorID,_id:groupID}).exec() ){
       {
@@ -292,7 +283,7 @@ router.post("/requesthandler", verifyAccessToken, async (req, res) => {
         return res.sendStatus(400)
       }
      }
-    } 
+    }
   }
 )
 
