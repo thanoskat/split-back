@@ -11,60 +11,71 @@ const generateAccessToken = require('../utility/generateAccessToken')
 const cookie = require('cookie')
 
 router.post('/signup', async (req, res) => {
-  const user = new userModel({
-    nickname: req.body.nickname,
-    email: req.body.email
-  })
-
   try {
+    const user = new userModel({
+      nickname: req.body.nickname,
+      email: req.body.email
+    })
     const savedUser = await user.save()
-    // console.log(savedUser)
     res.send(savedUser)
   }
-  catch(saveError) {
-    jsonError = {}
-    for ([k, v] of Object.entries(saveError.errors)){
-      jsonError[k] = v.properties.message
-    }
-    res.status(400).json(jsonError)
+  catch(error) {
+    console.dir(error)
+    res.send(error.message)
   }
 })
 
 router.get('/v/:token', async (req, res) => {
-  //router is ran when magic link that is sent to user is clicked
-  //decodes magic link that was sent, creates session,refresh and access tokens
-  //and adds them to user's local storage.
-  //access token and refresh token are required for sign in function in AuthenticationContext
-  //with this get and post on line 59 verification is over.
   try {
+    // Extract user id from magic link
     const decoded = jwt.verify(req.params.token, config.MAGICLINK_SECRET)
+
+    // Generate the long refresh token
     const refreshToken = generateRefreshToken()
+
+    // Create new session
     const session = new sessionModel({
       refreshToken: refreshToken,
       userId: decoded.userId,
       createdAt: Date.now()
     })
     await session.save()
+
+    // Get user info with user id
+    const user = await userModel.findById(decoded.userId)
+
+    // Generate the short access token
     const accessToken = generateAccessToken(decoded.userId)
+
+    // Put refresh token in cookie
     res.setHeader('Set-Cookie', cookie.serialize('refreshToken', refreshToken, { secure: true, httpOnly: true, path: '/auth/refreshtoken' }))
-    res.send({ accessToken: accessToken, sessionID: session.toObject()._id.toString() })
-    // SAVE IT IN FRONTEND LOCALSTORAGE
+
+    // Respond with session data and the first access token
+    res.send({
+      accessToken: accessToken,
+      sessionData: {
+        id: session._id.toString(),
+        userId: decoded.userId,
+        userEmail: user.email,
+        userNickname: user.nickname
+      }
+    })
   }
-  catch(error)
-  {
+  catch(error) {
+    console.dir(error)
     res.send(error.message)
   }
 })
 
 router.post('/sendlink', async (req, res) => {
-  try{
+  try {
     const userFound = await userModel.findOne({ email: req.body.email }).exec()
     const magicLink = generateMagicLink(userFound._id.toString())
     console.log(magicLink)
-    res.send("Magic link email sent")
+    res.send("Magic link email sent !!")
   }
-  catch(error){
-    console.log(error)
+  catch(error) {
+    console.dir(error)
     res.send(error.message)
   }
 })
@@ -72,6 +83,7 @@ router.post('/sendlink', async (req, res) => {
 router.get('/refreshtoken', async (req, res) => { //generates new access token
   try{
     // Getting refresh token from httponly cookie.
+    console.log(`\nreq.headers.cookie = ${req.headers.cookie}`) // DO NOT DELETE
     const refreshToken = cookie.parse(req.headers.cookie).refreshToken
     if(!refreshToken) return res.status(400).send("Refresh cookie not found.")
     // Checking if session exists in db.
