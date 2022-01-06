@@ -107,6 +107,7 @@ router.post("/removeuserfromgroup", verifyAccessToken, async (req, res) => {
   }
 })
 
+
 //ADD USER TO GROUP. ASSESS IF USER ALREADY EXISTS AND EXIT, OTHERWISE ADD
 router.post("/addUserToGroup", verifyAccessToken, async (req, res) => {
   //takes a group id and adds a person to group
@@ -189,7 +190,7 @@ router.get("/group/:groupID", verifyAccessToken, async (req, res) => {
 //GIVEN USER ID GET GROUPS THEY BELONG TO
 router.get("/groupsinuserID/:userID", async (req, res) => {
   const userID = toId(req.params.userID)
-  const groups = await userModel.findById({_id:userID}).populate("groups","title")
+  const groups = await userModel.findById({_id:userID}).populate("groups","title members")
   res.json(groups)
 })
 
