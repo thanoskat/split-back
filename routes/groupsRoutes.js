@@ -9,11 +9,9 @@ const verifyAccessToken = require('../middleware/verifyAccessToken')
 const jwt = require('jsonwebtoken');
 const { findById, deleteOne } = require("../models/groupModel");
 const config = process.env
-//1423qrwe
 
 //CREATE GROUP WITH USER'S ID. DON'T HAVE TO WORRY ABOUT MULTIPLE GROUPS
 //creators are automatically members of group they create
-
 router.post("/creategroup", verifyAccessToken, async (req, res) => {
   try{
     const creatorID = toId(jwt.verify(req.accessToken,config.ACCESS_TOKEN_SECRET).userId)
@@ -33,60 +31,52 @@ router.post("/creategroup", verifyAccessToken, async (req, res) => {
 })
 
 //CREATES NEW GROUP REQUEST
-router.post("/creategrouprequest", verifyAccessToken, async(req,res)=>{
-
-  try{
-    //tests if request has already been sent
+router.post("/creategrouprequest", verifyAccessToken, async(req,res) => {
+  try {
+    // Tests if request has already been sent
     const requestsFound = await requestsModel.countDocuments({
       requester:toId (req.queryUserId),
       recipient:req.body.recipient,
       status:0,
-      groupToJoin:req.body.groupToJoin }).exec()
-    //need to test if user has previously accepted similar request hence already member of group request is
-    //about to be sent
-    // const membersFounder =  await groupModel.find({_id:req.body.groupToJoin})
-    // const foundOne = membersFounder[0].members.find(e=>e==req.body.recipient) //is there a better way to do this?
-    const foundOne = await groupModel.countDocuments(
-      {
-        _id: req.body.groupToJoin,
-        members: req.body.recipient
-      }).exec()
-    console.log(foundOne)
+      groupToJoin:req.body.groupToJoin
+    }).exec()
+    const foundOne = await groupModel.countDocuments({
+      _id: req.body.groupToJoin,
+      members: req.body.recipient
+    }).exec()
 
     if(requestsFound) {
       console.log(`request to join group with ID ${req.body.groupToJoin} already sent and is pending with status ${0}`)
       return res.sendStatus(200)
     }
-    if(foundOne){
+    if(foundOne) {
       console.log(`Already member of group with ID ${req.body.groupToJoin}`)
+      return res.sendStatus(200)
     }
-    else{
-      //if request is new, creates this request
+    else {
+      // If request is new, creates this request
       const newGroupRequest = new requestsModel({
-      requester: toId (req.queryUserId), //current user who's sending invitation
-      recipient:req.body.recipient,
-      status:0, //0 pending, 1 accepted, 2 declined. For new requests that should be set to 0,
-      groupToJoin:req.body.groupToJoin
-
-    })
+        requester: toId (req.queryUserId), //current user who's sending invitation
+        recipient:req.body.recipient,
+        status:0, //0 pending, 1 accepted, 2 declined. For new requests that should be set to 0,
+        groupToJoin:req.body.groupToJoin
+      })
       const newReq = await newGroupRequest.save();
       await userModel.findByIdAndUpdate(req.body.recipient, { $push: { requests: newReq } }).exec()
       return res.sendStatus(200)
     }
-
-
-    }catch(err){
-      console.dir(err)
-      res.json({message:err})
+  }
+  catch(error) {
+    console.dir(error)
+    res.send(error.message)
   }
 })
 
-router.get('/getgrouprequests', verifyAccessToken, async (req, res) =>{
-    const userID = toId(req.queryUserId)
-    const requests = await userModel.findById(userID).populate("requests", "requester recipient groupToJoin status").exec()
-    res.send(requests)
+router.get('/getgrouprequests', verifyAccessToken, async (req, res) => {
+  const userID = toId(req.queryUserId)
+  const requests = await userModel.findById(userID).populate("requests", "requester recipient groupToJoin status").exec()
+  res.send(requests)
 })
-
 
 router.get("/deletegroups", async (req, res) => {
   try {
@@ -115,6 +105,7 @@ router.post("/removeuserfromgroup", verifyAccessToken, async (req, res) => {
   }
 })
 
+
 //ADD USER TO GROUP. ASSESS IF USER ALREADY EXISTS AND EXIT, OTHERWISE ADD
 router.post("/addUserToGroup", verifyAccessToken, async (req, res) => {
   //takes a group id and adds a person to group
@@ -134,7 +125,8 @@ router.post("/addUserToGroup", verifyAccessToken, async (req, res) => {
       console.dir(error)
       res.sendStatus(400)
     }
-  }else{
+  }
+  else {
     console.log("Can't add user to not owned group")
     res.sendStatus(400)
   }
@@ -157,7 +149,11 @@ router.delete("/deletegroup/:groupID", async (req, res) => {
 router.post("/deletegroup", verifyAccessToken, async (req, res) => {
   const groupId = (toId(req.body.groupId));
   try {
-    await userModel.updateMany({ /*_id:userID for specific document in collection*/ }, { $pull: { groups:groupId } }).exec() //deletes group from groups of Person collection when group is deleted
+    await userModel.updateMany(
+      { /*_id:userID for specific document in collection*/ },
+      { $pull: { groups:groupId } }
+    ).exec() //deletes group from groups of Person collection when group is deleted
+
     await groupModel.deleteOne({ _id: groupId}).exec() //deletes group
     console.log(`Group ${req.body.groupId} deleted successfully !`)
     res.sendStatus(200)
@@ -167,19 +163,6 @@ router.post("/deletegroup", verifyAccessToken, async (req, res) => {
     res.sendStatus(500)
   }
 })
-
-//Works for id in schema
-// router.delete("/del/:groupID", async (req,res)=>{
-//     const groupID=toId(req.params.groupID)
-//     const userID=toId("61927bbfa5dd5fe206f4571c")
-//     try {
-//         removal  = await userModel.updateOne({_id:userID},{$pull:{groups:{_id:groupID}}})
-//         console.log(removal)
-//         res.json(removal)
-//     }catch(err){
-//         res.json({message:err});
-//     }
-// })
 
 // FINDS GROUP CREATED BY USER
 router.get("/groupsbycreator",verifyAccessToken, async (req, res)=>{
@@ -203,14 +186,14 @@ router.get("/group/:groupID", verifyAccessToken, async (req, res) => {
 })
 
 //GIVEN USER ID GET GROUPS THEY BELONG TO
-router.get("/groupsinuserID/:userID", async (req, res)=>{
-    const userID = toId(req.params.userID)
-    const groups = await userModel.findById({_id:userID}).populate("groups","title")
-    res.json(groups)
+router.get("/groupsinuserID/:userID", async (req, res) => {
+  const userID = toId(req.params.userID)
+  const groups = await userModel.findById({_id:userID}).populate("groups","title members")
+  res.json(groups)
 })
 
 //GIVEN GROUP ID GET USERS IN THAT PARTICULAR GROUP
-router.get("/usersingroupID/:groupID", async(req,res)=>{
+router.get("/usersingroupID/:groupID", async(req,res) => {
     const groupID=toId(req.params.groupID)
     const users = await groupModel.findById({_id:groupID}).populate("members","name amount")
     res.json(users)
@@ -218,7 +201,7 @@ router.get("/usersingroupID/:groupID", async(req,res)=>{
 
 //FUNCTION - GIVEN GROUP AND USER ID ADDS USER TO GROUP
 const addUserToGroup = async (groupID, userID) => {
-  try{
+  try {
     userFoundInGroup = await groupModel.countDocuments({_id: groupID, members: userID}).exec()
     // Check if user is already in the group
     if(userFoundInGroup) {
@@ -240,65 +223,53 @@ const addUserToGroup = async (groupID, userID) => {
 }
 
 /////////////////////////////////Testing/////////////////////////////////////
-/////////////////////////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////////////////////////
 
-//HANDLES ACCEPT OR DECLINE
+// HANDLES ACCEPT OR DECLINE
 router.post("/requesthandler", verifyAccessToken, async (req, res) => {
   const status=req.body.status;
-    if (status===2){ //if user declined request - delete request from model
-      try{
-        await requestsModel.deleteOne({_id:req.body._id})
-        console.log("deleted request with id", req.body._id )
-        res.sendStatus(200)
-      }
-        catch(err){
-        res.sendStatus(400)
-        }
-
-  }else{ //else if user accepts add user to group
+  if(status===2) { //if user declined request - delete request from model
+    try {
+      await requestsModel.deleteOne({_id:req.body._id})
+      console.log("deleted request with id", req.body._id )
+      res.sendStatus(200)
+    }
+    catch(error) {
+      res.sendStatus(400)
+    }
+  }
+  else { //else if user accepts add user to group
     const userID = toId(req.queryUserId);  //ID of user to be added (current account that will accept request)
     const requestID=toId(req.body._id); //request ID
     const getRequestModelByID = await requestsModel.findById({_id:requestID})
     const groupID = getRequestModelByID.groupToJoin;  //ID of group that user will be added to
     const creatorID=getRequestModelByID.requester
-    
+
     //await requestsModel.findByIdAndUpdate(req.body._id, {status}) Updates requests schema model - not needed at the moment - could be useful if we want to keep actions in the future
-  
+
     //tests if user is owner of group and whether status is pending
-    if(!await groupModel.countDocuments({creator:creatorID,_id:groupID}).exec() ){
-      {
-        console.log("Can't add user to not owned group")
-        return res.sendStatus(400)
-      }
+    if(!await groupModel.countDocuments({creator:creatorID,_id:groupID}).exec()) {
+      console.log("Can't add user to not owned group")
+      return res.sendStatus(400)
     }
-    if(!getRequestModelByID.status===0){
+    if(!getRequestModelByID.status===0) {
       console.log("Status is not pending")
       return res.sendStatus(400)
     }
-    else{
+    else {
       try {
         //need to test if user has accepted request
         if(await addUserToGroup(groupID, userID)) {
-           await requestsModel.deleteOne({_id:requestID}) //deletes request from requests schema
-           await userModel.updateMany({},{$pull:{requests:requestID}})//deletes request from user's schema
-           return res.sendStatus(200)
+          await requestsModel.deleteOne({_id:requestID}) //deletes request from requests schema
+          await userModel.updateMany({},{$pull:{requests:requestID}})//deletes request from user's schema
+          return res.sendStatus(200)
         }
       }
       catch(error) {
         console.dir(error)
         return res.sendStatus(400)
       }
-     }
-    } 
+    }
   }
-)
-
+})
 /////////////////////////////////End of Testing/////////////////////////////////////
-/////////////////////////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////////////////////////
 module.exports=router;
