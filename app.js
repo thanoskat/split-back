@@ -15,6 +15,7 @@ const authRoute = require('./routes/authRoute')
 const getUsersRoute = require('./routes/getUsersRoute')
 const groupsRoutes = require('./routes/groupsRoutes')
 const userInfoRoute = require('./routes/userInfoRoute')
+const expenseRoute = require('./routes/expenseRoute')
 
 //Middleware
 app.use(cors(
@@ -29,6 +30,7 @@ app.use('/auth', authRoute)
 app.use('/getusers', getUsersRoute)
 app.use('/userinfo', userInfoRoute)
 app.use('/groups', groupsRoutes)
+app.use('/expense', expenseRoute)
 
 //ROUTES
 app.get('/', (req, res) => {
