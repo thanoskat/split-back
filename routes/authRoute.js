@@ -72,7 +72,10 @@ router.post('/sendlink', async (req, res) => {
     const userFound = await userModel.findOne({ email: req.body.email }).exec()
     const magicLink = generateMagicLink(userFound._id.toString())
     console.log(magicLink)
-    res.send(`An email containing a link has been sent to : ${req.body.email} `)
+    res.send({
+        link: magicLink,
+        message: `An email containing a link has been sent to : ${req.body.email}`
+      })
   }
   catch(error) {
     console.dir(error)
