@@ -48,7 +48,7 @@ router.get('/v/:token', async (req, res) => {
     const accessToken = generateAccessToken(decoded.userId)
 
     // Put refresh token in cookie
-    res.setHeader('Set-Cookie', cookie.serialize('refreshToken', refreshToken, { secure: true, httpOnly: true, path: '/auth/refreshtoken' }))
+    res.setHeader('Set-Cookie', cookie.serialize('refreshToken', refreshToken, { sameSite: 'none', secure: true, httpOnly: true, path: '/auth/refreshtoken' }))
 
     // Respond with session data and the first access token
     res.send({
@@ -87,7 +87,7 @@ router.get('/refreshtoken', async (req, res) => { //generates new access token
     const refreshToken = cookie.parse(req.headers.cookie).refreshToken
     if(!refreshToken) return res.status(400).send("Refresh cookie not found.")
     // Checking if session exists in db.
-    const sessionFound = await sessionModel.findOne({ refreshToken: refreshToken })
+    const sessionFound = await sessionModel.findOne({ refreshToken: refreshToken }).exec()
     if(!sessionFound) return res.status(401).send("Session not found.")
     // Checking if refresh token has been revoked.
     if(sessionFound.toObject().revoked == true) return res.status(401).send("Refresh token has been revoked.")

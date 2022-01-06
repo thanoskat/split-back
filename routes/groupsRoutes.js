@@ -73,8 +73,10 @@ router.post("/creategrouprequest", verifyAccessToken, async(req,res) => {
 })
 
 router.get('/getgrouprequests', verifyAccessToken, async (req, res) => {
-  const userID = toId(req.queryUserId)
-  const requests = await userModel.findById(userID).populate("requests", "requester recipient groupToJoin status").exec()
+  const userId = toId(req.queryUserId)
+  // const requests = await userModel.findById(userId).populate("requests", "requester recipient groupToJoin status").exec()
+  const requests = await requestsModel.find({ recipient: userId }).populate('requester', 'nickname').populate('groupToJoin', 'title').exec()
+  console.log(requests)
   res.send(requests)
 })
 

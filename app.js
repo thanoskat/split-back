@@ -18,13 +18,11 @@ const userInfoRoute = require('./routes/userInfoRoute')
 const expenseRoute = require('./routes/expenseRoute')
 
 //Middleware
-app.use(cors(
-  {
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    credentials: true,
-    origin: 'http://localhost:3000'
-  }
-))
+app.use(cors({
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  credentials: true,
+  origin: 'http://localhost:3000'
+}))
 app.use(express.json())
 app.use('/auth', authRoute)
 app.use('/getusers', getUsersRoute)
