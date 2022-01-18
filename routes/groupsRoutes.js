@@ -21,9 +21,8 @@ router.post("/creategroup", verifyAccessToken, async (req, res) => {
     })
     const savedGroup = await group.save();
     await addUserToGroup(group._id,creatorID) //creators are automatically members of group they create
-    // console.dir("savedgroup")
-    // res.json(savedgroup);
-    res.sendStatus(200)
+   
+    res.send(savedGroup._id) //sending group ID as response to client instead of OK status
   }catch(error){
     console.dir(error)
     res.json({message:error})
