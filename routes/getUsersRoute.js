@@ -8,7 +8,7 @@ const toId = mongoose.Types.ObjectId;
 
 router.get('/', verifyAccessToken, async (req, res) => {
   try{
-   const users = await Users.find()
+   const users = await Users.find().exec()
     res.json(users)
   }
   catch(error){
