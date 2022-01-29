@@ -341,6 +341,9 @@ router.post("/createmultigrouprequests2", verifyAccessToken, async (req, res) =>
 
 })
 
+router.post("/addexpense", verifyAccessToken, async(req,res)=>{
+  
+})
 
 
 module.exports = router;

@@ -9,10 +9,24 @@ const Schema = mongoose.Schema;
 // });
 
 const groupSchema = mongoose.Schema({
-    creator : {type:mongoose.Types.ObjectId, ref: 'Users' },
-    title    : String,
-    members  : [{ type:mongoose.Types.ObjectId, ref: 'Users' }],
-    expenses:[{type:mongoose.Types.ObjectId, ref:'Expense'}]
+  creator: { type: mongoose.Types.ObjectId, ref: 'Users'},
+  title: String,
+  members: [{ type: mongoose.Types.ObjectId, ref: 'Users' }],
+  expenses: [{ type: mongoose.Types.ObjectId, ref: 'Expense' }],
+  expenses2: [{
+    spender: {
+      type: mongoose.Types.ObjectId, ref: 'Users',
+      required: true
+    },
+    amount: {
+      type: Number,
+      required: true
+    },
+    description: {
+      type: String,
+      required: false
+    }
+  }]
 })
 
 //https://stackoverflow.com/questions/20009122/removing-many-to-many-reference-in-mongoose
