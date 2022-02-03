@@ -12,20 +12,19 @@ const groupSchema = mongoose.Schema({
   creator: { type: mongoose.Types.ObjectId, ref: 'Users'},
   title: String,
   members: [{ type: mongoose.Types.ObjectId, ref: 'Users' }],
-  expenses: [{ type: mongoose.Types.ObjectId, ref: 'Expense' }],
-  expenses2: [{
+  expenses: [{
     spender: {
       type: mongoose.Types.ObjectId, ref: 'Users',
       required: true
     },
-    amount: {
+    amount: [{
       type: Number,
       required: true
-    },
-    description: {
+    }],
+    description: [{
       type: String,
       required: false
-    }
+    }]
   }]
 })
 
