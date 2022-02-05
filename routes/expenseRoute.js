@@ -60,29 +60,32 @@ router.post('/addexpense2', verifyAccessToken, async (req, res) => {
   const spenderID = toId(req.body.spenderID);
   const description = req.body.description
 
-  if (isNaN(amount) || amount < 0) { //this can be also checked at front end
+  if (isNaN(amount) || amount < 0) {
     console.log("amount not a number or amount is negative")
     res.sendStatus(403)
     return false
   }
-  let foundExpense = await groupModel.countDocuments({ "expenses.spender": spenderID })
-   console.log("found", foundExpense)
+
+  let foundExpense = await groupModel.countDocuments({_id: groupID, "expenses.spender": spenderID }).exec()
+  console.log("found", foundExpense)
+  
+  //https://docs.mongodb.com/manual/reference/operator/update/positional/?fbclid=IwAR36T5C8vItm0PQoqg2XS3PPXUmadtiS9aiZJegrWmQaRqrE_Ry3IJeXEcA
   if (foundExpense) {//if spender has already created expense subdoc, update that one.
     try {
-      await groupModel.updateOne({ _id: groupID, "expenses.spender": spenderID }, { $push: { "expenses.$.amount": amount, "expenses.$.description": description } })
+      await groupModel.updateOne({ _id: groupID, "expenses.spender": spenderID }, { $push: { "expenses.$.amount": amount, "expenses.$.description": description } }).exec()
+      res.sendStatus(200)
     } catch (err) {
       console.dir(err)
     }
 
   } else { //create expense object in array and push amount and description 
     try {
-
-      await groupModel.findByIdAndUpdate(groupID, { $push: { expenses: { spender: spenderID } } }).exec() //<-use this to create expense but first check if there is one spender already use below method to look for one.
-      await groupModel.updateOne({ _id: groupID, "expenses.spender": spenderID }, { $push: { "expenses.$.amount": amount, "expenses.$.description": description } })
-      const grp = await groupModel.findOne({ _id: groupID, "expenses.spender": spenderID })
-      console.log("grp", grp)
+      await groupModel.findByIdAndUpdate(groupID, { $push: { expenses: { spender: spenderID } } }).exec()
+      await groupModel.updateOne({ _id: groupID, "expenses.spender": spenderID }, { $push: { "expenses.$.amount": amount, "expenses.$.description": description } }).exec()
+      res.sendStatus(200)
     } catch (err) {
       console.dir(err)
+      res.sendStatus(400)
     }
   }
 })
@@ -100,12 +103,11 @@ router.get("/getgroupexpenses/:groupID", verifyAccessToken, async (req, res) => 
   //console.log("groupID", group)
   try {
     const participantArray = await expenseModel.find({ group: group }).populate("debtor", "nickname")
-    //const participantArray2=await groupModel.findOne({_id:group}).populate("expenses.amount")
-    const grp = await groupModel.find({ _id: group })
-    // console.log("grp",grp.find(x=>x._id===group))
+    console.log("legacy participant", participantArray)
+    const participantArray2 = await groupModel.findOne({ _id: group })
+    const expensesArray = participantArray2.expenses
+    console.log("new participant", expensesArray)
 
-    // console.log("participant2",participantArray2.expenses)
-    // console.log("participant1", participantArray)
     settlepay.debtCalc3(participantArray)
     const result = settlepay.trackerCalc(participantArray)
     filteredResult = result.filter(isDebtorOrOwned)
