@@ -25,7 +25,7 @@ function* permutator(permutation) {
 const paySettle = (participantArray) => {
     
     //console.log(debtObj)
-    let humans = participantArray.map(x => x.debtor._id); //need to call function that will take debtInput here and will return permutated humans.
+    let humans = participantArray.map(x => x.spender); //need to call function that will take debtInput here and will return permutated humans.
     let debt = participantArray.map(x => x.debt);
     let stateC = 0;
     let stateD = 0;
@@ -122,8 +122,7 @@ const debtCalc2 = (participantArray) => {
 const debtCalc3 = (participantArray) => {
     let target = participantArray.reduce((prevValue, currValue) => prevValue + currValue.amount.reduce((prevValue, currValue) => prevValue + currValue, 0), 0) //first reducer is to add all amounts in the main array of amounts. Second reducer is to add all individual amounts per user in the amount array of the expenses document
         / participantArray.length;
-        // console.log("target",target*participantArray.length)
-    // return target
+         //console.log("target",target*participantArray.length)    // return target
     return participantArray.map(x => x["debt"] = target - x.amount.reduce((a, b) => a + b, 0));
     
 }

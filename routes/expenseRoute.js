@@ -10,7 +10,7 @@ const jwt = require('jsonwebtoken');
 const config = process.env
 const settlepay = require("../utility/settlePayments")
 
-//CREATES EXPENSE REQUEST AND UPDATES EXPENSE AND DESCRIPTION ARRAYS WHEN NEW DATA IS AVAILABLE
+//CREATES EXPENSE REQUEST AND UPDATES EXPENSE AND DESCRIPTION ARRAYS WHEN NEW DATA IS AVAILABLE (deprecated)
 router.post('/addexpense', verifyAccessToken, async (req, res) => {
 
   const groupID = toId(req.body.groupID);
@@ -66,13 +66,18 @@ router.post('/addexpense2', verifyAccessToken, async (req, res) => {
     return false
   }
 
-  let foundExpense = await groupModel.countDocuments({_id: groupID, "expenses.spender": spenderID }).exec()
+  let foundExpense = await groupModel.countDocuments({ _id: groupID, "expenses.spender": spenderID }).exec()
   console.log("found", foundExpense)
-  
+
   //https://docs.mongodb.com/manual/reference/operator/update/positional/?fbclid=IwAR36T5C8vItm0PQoqg2XS3PPXUmadtiS9aiZJegrWmQaRqrE_Ry3IJeXEcA
   if (foundExpense) {//if spender has already created expense subdoc, update that one.
     try {
       await groupModel.updateOne({ _id: groupID, "expenses.spender": spenderID }, { $push: { "expenses.$.amount": amount, "expenses.$.description": description } }).exec()
+      const currentGroup = await groupModel.findOne({ _id: groupID }).exec();
+      const groupExpenses = currentGroup.expenses;
+      const groupTotal = groupExpenses.reduce((prevValue, currValue) => prevValue + currValue.amount.reduce((prevValue, currValue) => prevValue + currValue, 0), 0);
+      await groupModel.updateOne({ _id: groupID }, { $set: { total: groupTotal } }).exec()
+      currentGroup.save()
       res.sendStatus(200)
     } catch (err) {
       console.dir(err)
@@ -82,6 +87,11 @@ router.post('/addexpense2', verifyAccessToken, async (req, res) => {
     try {
       await groupModel.findByIdAndUpdate(groupID, { $push: { expenses: { spender: spenderID } } }).exec()
       await groupModel.updateOne({ _id: groupID, "expenses.spender": spenderID }, { $push: { "expenses.$.amount": amount, "expenses.$.description": description } }).exec()
+      const currentGroup = await groupModel.findOne({ _id: groupID }).exec();
+      const groupExpenses = currentGroup.expenses;
+      const groupTotal = groupExpenses.reduce((prevValue, currValue) => prevValue + currValue.amount.reduce((prevValue, currValue) => prevValue + currValue, 0), 0);
+      await groupModel.updateOne({ _id: groupID }, { $set: { total: groupTotal } }).exec()
+      currentGroup.save()
       res.sendStatus(200)
     } catch (err) {
       console.dir(err)
@@ -91,9 +101,9 @@ router.post('/addexpense2', verifyAccessToken, async (req, res) => {
 })
 
 //Gets all expenses on a specific group ID and calculates settlements
-
+//check settlePayments functions one by one and update variables and you're set.
 router.get("/getgroupexpenses/:groupID", verifyAccessToken, async (req, res) => {
-  const group = req.params.groupID;
+  const groupID = req.params.groupID;
   const userID = jwt.verify(req.accessToken, config.ACCESS_TOKEN_SECRET).userId
   const isDebtorOrOwned = (value) => {
     if (String(value.debtor) === userID || String(value.owned) === userID) {
@@ -102,13 +112,11 @@ router.get("/getgroupexpenses/:groupID", verifyAccessToken, async (req, res) => 
   }
   //console.log("groupID", group)
   try {
-    const participantArray = await expenseModel.find({ group: group }).populate("debtor", "nickname")
-    console.log("legacy participant", participantArray)
-    const participantArray2 = await groupModel.findOne({ _id: group })
-    const expensesArray = participantArray2.expenses
-    console.log("new participant", expensesArray)
-
+    
+    const expenseArr = await groupModel.findOne({ _id: groupID })
+    const participantArray = expenseArr.expenses
     settlepay.debtCalc3(participantArray)
+    //console.log("new participant", participantArray)
     const result = settlepay.trackerCalc(participantArray)
     filteredResult = result.filter(isDebtorOrOwned)
     res.json(filteredResult)
