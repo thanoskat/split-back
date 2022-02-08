@@ -53,7 +53,6 @@ router.post('/addexpense', verifyAccessToken, async (req, res) => {
 })
 
 
-
 router.post('/addexpense2', verifyAccessToken, async (req, res) => {
   const groupID = toId(req.body.groupID);
   const amount = req.body.amount;
@@ -106,19 +105,18 @@ router.get("/getgroupexpenses/:groupID", verifyAccessToken, async (req, res) => 
   const groupID = req.params.groupID;
   const userID = jwt.verify(req.accessToken, config.ACCESS_TOKEN_SECRET).userId
   const isDebtorOrOwned = (value) => {
-    if (String(value.debtor) === userID || String(value.owned) === userID) {
+    if (String(value.debtorID) === userID || String(value.ownedID) === userID) {
       return value;
     }
   }
   //console.log("groupID", group)
   try {
-    
-    const expenseArr = await groupModel.findOne({ _id: groupID })
+    const expenseArr = await groupModel.findOne({ _id: groupID }).populate({ path: "expenses", populate: { path: "spender", model: "Users" } })
     const participantArray = expenseArr.expenses
     settlepay.debtCalc3(participantArray)
-    //console.log("new participant", participantArray)
     const result = settlepay.trackerCalc(participantArray)
-    filteredResult = result.filter(isDebtorOrOwned)
+    const filteredResult = result.filter(isDebtorOrOwned)
+    console.log(filteredResult)
     res.json(filteredResult)
   } catch (err) {
     res.sendStatus(500)

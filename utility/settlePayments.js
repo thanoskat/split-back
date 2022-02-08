@@ -23,9 +23,10 @@ function* permutator(permutation) {
 }
 
 const paySettle = (participantArray) => {
-    
+
     //console.log(debtObj)
-    let humans = participantArray.map(x => x.spender); //need to call function that will take debtInput here and will return permutated humans.
+    let humansID = participantArray.map(x => x.spender._id); //need to call function that will take debtInput here and will return permutated humans.
+    let humansName = participantArray.map(x => x.spender.nickname);
     let debt = participantArray.map(x => x.debt);
     let stateC = 0;
     let stateD = 0;
@@ -67,7 +68,7 @@ const paySettle = (participantArray) => {
                     debt[negtracker] = Remainder;
                     debt[postracker] = 0;
                     // State[StateDim] = humans[postracker] + "--> " + humans[negtracker] + " " + storage;
-                    State[StateDim] ={debtor:humans[postracker], owned:humans[negtracker],amount:storage  }
+                    State[StateDim] = { debtorID: humansID[postracker], ownedID: humansID[negtracker], debtorName: humansName[postracker], ownedName: humansName[negtracker], amount: storage }
 
 
                 } else {
@@ -75,7 +76,7 @@ const paySettle = (participantArray) => {
                     debt[negtracker] = 0;
                     debt[postracker] = Remainder;
                     // State[StateDim] = humans[postracker] + "--> " + humans[negtracker] + " " + storage;
-                    State[StateDim] ={debtor:humans[postracker], owned:humans[negtracker],amount:storage  }
+                    State[StateDim] = { debtorID: humansID[postracker], ownedID: humansID[negtracker], debtorName: humansName[postracker], ownedName: humansName[negtracker], amount: storage }
 
 
                 }
@@ -122,9 +123,9 @@ const debtCalc2 = (participantArray) => {
 const debtCalc3 = (participantArray) => {
     let target = participantArray.reduce((prevValue, currValue) => prevValue + currValue.amount.reduce((prevValue, currValue) => prevValue + currValue, 0), 0) //first reducer is to add all amounts in the main array of amounts. Second reducer is to add all individual amounts per user in the amount array of the expenses document
         / participantArray.length;
-         //console.log("target",target*participantArray.length)    // return target
+    //console.log("target",target*participantArray.length)    // return target
     return participantArray.map(x => x["debt"] = target - x.amount.reduce((a, b) => a + b, 0));
-    
+
 }
 
 const CreateParticipant = (_name, _amount) => {
@@ -139,7 +140,7 @@ const CreateParticipant = (_name, _amount) => {
         // moneySpent.push(_amount);
         participantArray.push(newParticipant);
         //console.log(participantArray)
-        
+
     }
 
 }
@@ -204,4 +205,4 @@ let Debt = class {
 // console.log(trackerCalc(participantArray));
 
 
-module.exports={debtCalc3,trackerCalc}
+module.exports = { debtCalc3, trackerCalc }
