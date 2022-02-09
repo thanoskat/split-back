@@ -23,7 +23,6 @@ function* permutator(permutation) {
 }
 
 const paySettle = (participantArray) => {
-
     //console.log(debtObj)
     let humansID = participantArray.map(x => x.spender._id); //need to call function that will take debtInput here and will return permutated humans.
     let humansName = participantArray.map(x => x.spender.nickname);
@@ -53,32 +52,24 @@ const paySettle = (participantArray) => {
             } //end if
 
             if (stateC > stateD && negtracker !== -1 && postracker !== -1 && debt[negtracker] !== 0 && debt[postracker] !== 0) {
-
                 //stateC updates when a positive or negative balance has been spotted.
                 //This is not enough though - it might update StateC without updating the +ve or -ve trackers (thus returnig NaNs)
                 //We also don't have to loop when debt[X] is zero as acount balance has been settled.
-
                 StateDim++
                 stateD = stateC;
                 Remainder = debt[negtracker] + debt[postracker];
-
-
                 if (Remainder <= 0) {
                     storage = debt[postracker];
                     debt[negtracker] = Remainder;
                     debt[postracker] = 0;
                     // State[StateDim] = humans[postracker] + "--> " + humans[negtracker] + " " + storage;
                     State[StateDim] = { debtorID: humansID[postracker], ownedID: humansID[negtracker], debtorName: humansName[postracker], ownedName: humansName[negtracker], amount: storage }
-
-
                 } else {
                     storage = -debt[negtracker];
                     debt[negtracker] = 0;
                     debt[postracker] = Remainder;
                     // State[StateDim] = humans[postracker] + "--> " + humans[negtracker] + " " + storage;
                     State[StateDim] = { debtorID: humansID[postracker], ownedID: humansID[negtracker], debtorName: humansName[postracker], ownedName: humansName[negtracker], amount: storage }
-
-
                 }
                 //end if 
             }//end if
@@ -168,9 +159,7 @@ const trackerCalc = (participantArray) => {
             }
         }
     }
-
     return result;
-
 }
 
 let Participant = class {

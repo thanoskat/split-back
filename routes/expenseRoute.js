@@ -56,13 +56,19 @@ router.post('/addexpense', verifyAccessToken, async (req, res) => {
 router.post('/addexpense2', verifyAccessToken, async (req, res) => {
   const groupID = toId(req.body.groupID);
   const amount = req.body.amount;
-  const spenderID = toId(req.body.spenderID);
+  // const spenderID = toId(req.body.spenderID);
+  const spenderID = jwt.verify(req.accessToken, config.ACCESS_TOKEN_SECRET).userId
   const description = req.body.description
 
   if (isNaN(amount) || amount < 0) {
     console.log("amount not a number or amount is negative")
     res.sendStatus(403)
     return false
+  }
+  const isDebtorOrOwned = (value) => {
+    if (String(value.debtorID) === spenderID || String(value.ownedID) === spenderID) {
+      return value;
+    }
   }
 
   let foundExpense = await groupModel.countDocuments({ _id: groupID, "expenses.spender": spenderID }).exec()
@@ -77,7 +83,15 @@ router.post('/addexpense2', verifyAccessToken, async (req, res) => {
       const groupTotal = groupExpenses.reduce((prevValue, currValue) => prevValue + currValue.amount.reduce((prevValue, currValue) => prevValue + currValue, 0), 0);
       await groupModel.updateOne({ _id: groupID }, { $set: { total: groupTotal } }).exec()
       currentGroup.save()
-      res.sendStatus(200)
+      //once expense is imported, calculate transactions
+      const expenseArr = await groupModel.findOne({ _id: groupID }).populate({ path: "expenses", populate: { path: "spender", model: "Users" } })
+      const participantArray = expenseArr.expenses
+      settlepay.debtCalc3(participantArray)
+      const result = settlepay.trackerCalc(participantArray)
+      const filteredResult = result.filter(isDebtorOrOwned)
+      //create schema to keep transaction here
+      //end of calc
+      res.json(filteredResult)
     } catch (err) {
       console.dir(err)
     }
@@ -91,7 +105,15 @@ router.post('/addexpense2', verifyAccessToken, async (req, res) => {
       const groupTotal = groupExpenses.reduce((prevValue, currValue) => prevValue + currValue.amount.reduce((prevValue, currValue) => prevValue + currValue, 0), 0);
       await groupModel.updateOne({ _id: groupID }, { $set: { total: groupTotal } }).exec()
       currentGroup.save()
-      res.sendStatus(200)
+      //once expense is imported, calculate transactions
+      const expenseArr = await groupModel.findOne({ _id: groupID }).populate({ path: "expenses", populate: { path: "spender", model: "Users" } })
+      const participantArray = expenseArr.expenses
+      settlepay.debtCalc3(participantArray)
+      const result = settlepay.trackerCalc(participantArray)
+      const filteredResult = result.filter(isDebtorOrOwned)
+      //create schema to keep transaction here
+      //end of calc
+      res.json(filteredResult)
     } catch (err) {
       console.dir(err)
       res.sendStatus(400)
@@ -113,10 +135,11 @@ router.get("/getgroupexpenses/:groupID", verifyAccessToken, async (req, res) => 
   try {
     const expenseArr = await groupModel.findOne({ _id: groupID }).populate({ path: "expenses", populate: { path: "spender", model: "Users" } })
     const participantArray = expenseArr.expenses
+   
     settlepay.debtCalc3(participantArray)
     const result = settlepay.trackerCalc(participantArray)
     const filteredResult = result.filter(isDebtorOrOwned)
-    console.log(filteredResult)
+    //console.log(filteredResult)
     res.json(filteredResult)
   } catch (err) {
     res.sendStatus(500)
