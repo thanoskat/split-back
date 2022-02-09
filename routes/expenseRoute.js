@@ -52,7 +52,6 @@ router.post('/addexpense', verifyAccessToken, async (req, res) => {
   }
 })
 
-
 router.post('/addexpense2', verifyAccessToken, async (req, res) => {
   const groupID = toId(req.body.groupID);
   const amount = req.body.amount;
@@ -96,7 +95,7 @@ router.post('/addexpense2', verifyAccessToken, async (req, res) => {
       console.dir(err)
     }
 
-  } else { //create expense object in array and push amount and description 
+  } else { //create expense object in array and push amount and description
     try {
       await groupModel.findByIdAndUpdate(groupID, { $push: { expenses: { spender: spenderID } } }).exec()
       await groupModel.updateOne({ _id: groupID, "expenses.spender": spenderID }, { $push: { "expenses.$.amount": amount, "expenses.$.description": description } }).exec()
@@ -121,6 +120,38 @@ router.post('/addexpense2', verifyAccessToken, async (req, res) => {
   }
 })
 
+router.post('/addtransaction', verifyAccessToken, async (req, res) => {
+  const user = jwt.verify(req.accessToken, config.ACCESS_TOKEN_SECRET).userId
+  const group = toId(req.body.groupId)
+  // TODO check if user belongs to group
+  const sender = toId(req.body.sender)
+  // TODO check if sender is user
+  console.log(req.body.receiver)
+  let receiver
+  if(req.body.receiver !== '') {
+    console.log('TRUE')
+    receiver = toId(req.body.receiver)
+  }
+  else {
+    console.log('false')
+    receiver = null
+  }
+  // TODO check if receiver belongs to group
+  const amount = req.body.amount
+  // TODO check if amount has correct format
+  const description = req.body.description
+
+  const newTransaction = {
+    sender: sender,
+    receiver: receiver,
+    amount: amount,
+    description: description
+  }
+
+  await groupModel.findByIdAndUpdate(group, { $push: { transactions: newTransaction } }).exec()
+  return res.sendStatus(200)
+})
+
 //Gets all expenses on a specific group ID and calculates settlements
 //check settlePayments functions one by one and update variables and you're set.
 router.get("/getgroupexpenses/:groupID", verifyAccessToken, async (req, res) => {
@@ -135,7 +166,7 @@ router.get("/getgroupexpenses/:groupID", verifyAccessToken, async (req, res) => 
   try {
     const expenseArr = await groupModel.findOne({ _id: groupID }).populate({ path: "expenses", populate: { path: "spender", model: "Users" } })
     const participantArray = expenseArr.expenses
-   
+
     settlepay.debtCalc3(participantArray)
     const result = settlepay.trackerCalc(participantArray)
     const filteredResult = result.filter(isDebtorOrOwned)

@@ -76,7 +76,7 @@ router.post("/creategrouprequest", verifyAccessToken, async (req, res) => {
 router.post("/createmultigrouprequests", verifyAccessToken, async (req, res) => {
   try {
     // Tests if request has already been sent
-    //this test might be reduntant.It's good to exist as a safety measure 
+    //this test might be reduntant.It's good to exist as a safety measure
     //but could be delaying process of sending request
 
     req.body.recipient.forEach(async (recipient) => {
@@ -111,7 +111,7 @@ router.post("/createmultigrouprequests", verifyAccessToken, async (req, res) => 
         })
         let newReq = await newGroupRequest.save();
         await userModel.findByIdAndUpdate(recipient, { $push: { requests: newReq } }).exec()
-       
+
       }
      }
     )
@@ -239,6 +239,11 @@ router.get("/group/:groupID", verifyAccessToken, async (req, res) => {
   res.send(group)
 })
 
+router.get("/:groupId", verifyAccessToken, async (req, res) => {
+  const group = await groupModel.findById(req.params.groupId).populate("members", "nickname")
+  res.send(group)
+})
+
 //GIVEN USER ID GET GROUPS THEY BELONG TO
 router.get("/groupsinuserID/:userID", async (req, res) => {
   const userID = toId(req.params.userID)
@@ -330,19 +335,19 @@ router.post("/createmultigrouprequests2", verifyAccessToken, async (req, res) =>
   console.log("we are here")
 
   req.body.recipient.forEach( async (recipient) => {
-    
+
      let userfound = await userModel.findById({_id:recipient})
-    
+
     console.log(mongoose.Types.ObjectId.isValid(recipient))
     console.log("userfound",userfound)
   })
-   
+
   res.sendStatus(200)
 
 })
 
 router.post("/addexpense", verifyAccessToken, async(req,res)=>{
-  
+
 })
 
 

@@ -27,6 +27,24 @@ const groupSchema = mongoose.Schema({
       required: false
     }]
   }],
+  transactions: [{
+    sender: {
+      type: mongoose.Types.ObjectId, ref: 'Users',
+      required: true
+    },
+    receiver: {
+      type: mongoose.Types.ObjectId, ref: 'Users',
+      required: false
+    },
+    amount: {
+      type: Number,
+      required: true
+    },
+    description: {
+      type: String,
+      required: false
+    }
+  }],
   total: Number
 })
 
