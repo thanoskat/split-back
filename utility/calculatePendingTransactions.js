@@ -9,7 +9,14 @@ const calculatePendingTransactions = (transactions, members) => {
     })
   })
 
+  // Initialize total amount spent outside of group
+  let totalSpent = 0
+
   transactions.map(transaction => {
+    // If receiver is outside of group
+    if(transaction.receiver == null) {
+      totalSpent += transaction.amount
+    }
     spenders.map(spender => {
       if(transaction.sender.toString() == spender.id.toString()) {
         spender.balance -= transaction.amount
@@ -22,6 +29,7 @@ const calculatePendingTransactions = (transactions, members) => {
   })
 
   console.log(spenders)
+  console.log('totalSpent: ', totalSpent)
 
 }
 
