@@ -123,13 +123,49 @@ router.post("/createmultigrouprequests", verifyAccessToken, async (req, res) => 
   }
 })
 
-
+/// 1000/60/60/24
 router.get('/getgrouprequests', verifyAccessToken, async (req, res) => {
   const userId = toId(req.queryUserId)
+  const getTimeSince = (timestamp) => {
+  const currDate = new Date()
+  const currDatems = currDate.getTime()
+  const stamp=(currDatems-timestamp)
+  let secs,mins,hours,days
+  secs=stamp/1000
+  mins=secs/60
+  hours=mins/60
+  days=hours/24
+
+  // console.log("secs",secs%10)
+  // console.log("mins",mins%10)
+  // console.log("hours",hours%10)
+  // console.log("days",days%10)
+  
+ if(days%10<1 && hours%10<1 && mins%10<1) return {timeago:Math.round(secs),format:"sec"}
+ if(days%10<1 && hours%10<1 && mins%10>1) return {timeago:Math.round(mins),format:"min"}
+ if(days%10<1 && hours%10>1 && mins%10>1) return {timeago:Math.round(hours),format:"hours"}
+ if(days%10>1 && hours%10>1 && mins%10>1) return {timeago:Math.round(days),format:"days"}
+
+ 
+    }
   // const requests = await userModel.findById(userId).populate("requests", "requester recipient groupToJoin status").exec()
   const requests = await requestsModel.find({ recipient: userId }).populate('requester', 'nickname').populate('groupToJoin', 'title').exec()
-  console.log(requests)
-  res.send(requests)
+  const dateFormatRequests=requests.map(item=>{
+  const container={}
+  container["_id"]=item._id,
+  container["requester"]=item.requester,
+  container["recipient"]=item.recipient
+  container["status"]=item.status,
+  container["groupToJoin"]=item.groupToJoin,
+  container["date"]=getTimeSince(new Date(item.date).getTime())
+
+  return container;
+  })
+
+  
+
+  console.log(dateFormatRequests)
+  res.send(dateFormatRequests)
 })
 
 router.get("/deletegroups", async (req, res) => {
@@ -326,24 +362,7 @@ router.post("/requesthandler", verifyAccessToken, async (req, res) => {
   }
 })
 /////////////////////////////////End of Testing/////////////////////////////////////
-router.post("/createmultigrouprequests2", verifyAccessToken, async (req, res) => {
-  console.log("we are here")
 
-  req.body.recipient.forEach( async (recipient) => {
-    
-     let userfound = await userModel.findById({_id:recipient})
-    
-    console.log(mongoose.Types.ObjectId.isValid(recipient))
-    console.log("userfound",userfound)
-  })
-   
-  res.sendStatus(200)
-
-})
-
-router.post("/addexpense", verifyAccessToken, async(req,res)=>{
-  
-})
 
 
 module.exports = router;

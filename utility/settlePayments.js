@@ -48,7 +48,6 @@ const paySettle = (participantArray) => {
                 postracker = j;
                 stateC++
 
-
             } //end if
 
             if (stateC > stateD && negtracker !== -1 && postracker !== -1 && debt[negtracker] !== 0 && debt[postracker] !== 0) {
