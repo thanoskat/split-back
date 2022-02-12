@@ -12,6 +12,7 @@ const calculatePendingTransactions = (transactions, members) => {
   // Initialize total amount spent outside of group
   let totalSpent = 0
 
+  // Loop through transactions
   transactions.map(transaction => {
     // If receiver is outside of group (null) add the expense to total
     if(transaction.receiver == null) {
@@ -28,9 +29,7 @@ const calculatePendingTransactions = (transactions, members) => {
     })
   })
 
-  console.log(spenders)
-  console.log('totalSpent: ', totalSpent)
-
+  // Separate spenders in debtors and creditors
   const debtors = []
   const creditors = []
 
@@ -54,6 +53,7 @@ const calculatePendingTransactions = (transactions, members) => {
   console.log(debtors)
   console.log("Creditors:")
   console.log(creditors)
+  console.log('totalSpent: ', totalSpent)
 }
 
 module.exports = calculatePendingTransactions
