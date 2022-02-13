@@ -71,18 +71,21 @@ const calculatePendingTransactions = (transactions, members) => {
         amount: difference
       })
     }
-    const pendingTransaction = {
+
+    pendingTransactions.push({
       sender: poppedDeptor.id,
       receiver: poppedCreditor.id,
       amount: Math.min(poppedDeptor.amount, poppedCreditor.amount)
-    }
-    pendingTransactions.push(pendingTransaction)
+    })
   }
 
   console.log("\nPENDING TRANSACTIONS")
   console.log(pendingTransactions)
 
-  return(pendingTransactions)
+  return({
+    pendingTransactions: pendingTransactions,
+    totalSpent: totalSpent
+  })
 }
 
 module.exports = calculatePendingTransactions

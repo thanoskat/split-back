@@ -59,7 +59,10 @@ const groupSchema = mongoose.Schema({
       required: true
     }
   }],
-  total: Number
+  totalSpent: {
+    type: Number,
+    default: 0
+  }
 })
 
 //https://stackoverflow.com/questions/20009122/removing-many-to-many-reference-in-mongoose
