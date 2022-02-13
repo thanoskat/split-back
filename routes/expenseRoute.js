@@ -152,7 +152,8 @@ router.post('/addtransaction', verifyAccessToken, async (req, res) => {
   await groupModel.findByIdAndUpdate(group, { $push: { transactions: newTransaction } }).exec()
 
   updatedGroup = await groupModel.findById(group).exec()
-  calculatePendingTransactions(updatedGroup.transactions, updatedGroup.members)
+  const pendingTransactions = calculatePendingTransactions(updatedGroup.transactions, updatedGroup.members)
+  await groupModel.findByIdAndUpdate(group, { $set: { pendingTransactions: pendingTransactions } }, { upsert: true }).exec()
   return res.sendStatus(200)
 })
 

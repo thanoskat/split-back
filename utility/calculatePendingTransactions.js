@@ -44,16 +44,45 @@ const calculatePendingTransactions = (transactions, members) => {
     else {
       creditors.push({
         id: spender.id,
-        amount: debtOrCredit
+        amount: debtOrCredit*(-1)
       })
     }
   })
 
-  console.log("Debtors:")
-  console.log(debtors)
-  console.log("Creditors:")
-  console.log(creditors)
   console.log('totalSpent: ', totalSpent)
+
+  const pendingTransactions = []
+
+  while(debtors.length > 0 && creditors.length > 0) {
+    // Pop last element of each array
+    const poppedDeptor = debtors.pop()
+    const poppedCreditor = creditors.pop()
+    const difference = Math.abs(poppedDeptor.amount - poppedCreditor.amount)
+
+    if(poppedDeptor.amount < poppedCreditor.amount){
+      creditors.push({
+        id: poppedCreditor.id,
+        amount: difference
+      })
+    }
+    else if(poppedDeptor.amount > poppedCreditor.amount) {
+      debtors.push({
+        id: poppedDeptor.id,
+        amount: difference
+      })
+    }
+    const pendingTransaction = {
+      sender: poppedDeptor.id,
+      receiver: poppedCreditor.id,
+      amount: Math.min(poppedDeptor.amount, poppedCreditor.amount)
+    }
+    pendingTransactions.push(pendingTransaction)
+  }
+
+  console.log("\nPENDING TRANSACTIONS")
+  console.log(pendingTransactions)
+
+  return(pendingTransactions)
 }
 
 module.exports = calculatePendingTransactions
