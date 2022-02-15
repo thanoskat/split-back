@@ -1,3 +1,7 @@
+const roundToTwo = (num) => {
+  return +(Math.round(num + "e+2")  + "e-2")
+}
+
 const calculatePendingTransactions = (transactions, members) => {
 
   // Initialize spenders array with 0 balances
@@ -34,7 +38,7 @@ const calculatePendingTransactions = (transactions, members) => {
   const creditors = []
 
   spenders.map(spender => {
-    debtOrCredit = spender.balance + (totalSpent/spenders.length)
+    debtOrCredit = spender.balance + roundToTwo(totalSpent/spenders.length)
     if( debtOrCredit > 0) {
       debtors.push({
         id: spender.id,
@@ -72,11 +76,13 @@ const calculatePendingTransactions = (transactions, members) => {
       })
     }
 
-    pendingTransactions.push({
-      sender: poppedDeptor.id,
-      receiver: poppedCreditor.id,
-      amount: Math.min(poppedDeptor.amount, poppedCreditor.amount)
-    })
+    if(Math.min(poppedDeptor.amount, poppedCreditor.amount) != 0){
+      pendingTransactions.push({
+        sender: poppedDeptor.id,
+        receiver: poppedCreditor.id,
+        amount: Math.min(poppedDeptor.amount, poppedCreditor.amount)
+      })
+    }
   }
 
   console.log("\nPENDING TRANSACTIONS")
