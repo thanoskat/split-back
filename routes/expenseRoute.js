@@ -11,6 +11,12 @@ const config = process.env
 const settlepay = require("../utility/settlePayments")
 const calcPending = require('../utility/calcPending')
 
+const updatePendingTransactions = async (groupId) => {
+  group = await groupModel.findById(groupId).exec()
+  const result = calcPending(group.transactions, group.members)
+  await groupModel.findByIdAndUpdate(groupId, { $set: { pendingTransactions: result.pendingTransactions, totalSpent: result.totalSpent } }, { upsert: true }).exec()
+}
+
 //CREATES EXPENSE REQUEST AND UPDATES EXPENSE AND DESCRIPTION ARRAYS WHEN NEW DATA IS AVAILABLE (deprecated)
 router.post('/addexpense', verifyAccessToken, async (req, res) => {
 
@@ -123,18 +129,15 @@ router.post('/addexpense2', verifyAccessToken, async (req, res) => {
 
 router.post('/addtransaction', verifyAccessToken, async (req, res) => {
   const user = jwt.verify(req.accessToken, config.ACCESS_TOKEN_SECRET).userId
-  const group = toId(req.body.groupId)
+  const groupId = toId(req.body.groupId)
   // TODO check if user belongs to group
   const sender = toId(req.body.sender)
   // TODO check if sender is user
-  console.log(req.body.receiver)
   let receiver
   if(req.body.receiver !== '') {
-    console.log('TRUE')
     receiver = toId(req.body.receiver)
   }
   else {
-    console.log('false')
     receiver = null
   }
   // TODO check if receiver belongs to group
@@ -149,12 +152,8 @@ router.post('/addtransaction', verifyAccessToken, async (req, res) => {
     description: description
   }
 
-  await groupModel.findByIdAndUpdate(group, { $push: { transactions: newTransaction } }).exec()
-
-  updatedGroup = await groupModel.findById(group).exec()
-  // const result = calculatePendingTransactions(updatedGroup.transactions, updatedGroup.members)
-  const result = calcPending(updatedGroup.transactions, updatedGroup.members)
-  await groupModel.findByIdAndUpdate(group, { $set: { pendingTransactions: result.pendingTransactions, totalSpent: result.totalSpent } }, { upsert: true }).exec()
+  await groupModel.findByIdAndUpdate(groupId, { $push: { transactions: newTransaction } }).exec()
+  await updatePendingTransactions(groupId)
   return res.sendStatus(200)
 })
 
