@@ -38,13 +38,15 @@ const calcPending = (transactions, members) => {
 
   spenders.map((spender, index) => {
     debtOrCredit = currency(spender.balance).add(moneyArray[index])
-    if(debtOrCredit > 0) {
+    // if debt
+    if(debtOrCredit.value > 0) {
       debtors.push({
         id: spender.id,
         balance: debtOrCredit
       })
     }
-    else if(debtOrCredit < 0) {
+    // if credit
+    else if(debtOrCredit.value < 0) {
       creditors.push({
         id: spender.id,
         balance: debtOrCredit
@@ -67,11 +69,11 @@ const calcPending = (transactions, members) => {
         id: poppedCreditor.id,
         balance: diff
       })
-      amountPaid = Math.abs(poppedDebtor.balance)
+      amountPaid = Math.abs(poppedDebtor.balance.value)
     }
     // if credit is equal to debt
     else if(diff.value == 0) {
-      amountPaid = Math.abs(poppedDebtor.balance)
+      amountPaid = Math.abs(poppedDebtor.balance.value)
     }
     // if debt is bigger than credit
     else if(diff.value > 0) {
@@ -79,7 +81,7 @@ const calcPending = (transactions, members) => {
         id: poppedDebtor.id,
         balance: diff
       })
-      amountPaid = Math.abs(poppedCreditor.balance)
+      amountPaid = Math.abs(poppedCreditor.balance.value)
     }
 
     pendingTransactions.push({
