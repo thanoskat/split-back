@@ -9,7 +9,7 @@ const verifyAccessToken = require('../middleware/verifyAccessToken')
 const jwt = require('jsonwebtoken');
 const config = process.env
 const settlepay = require("../utility/settlePayments")
-const calculatePendingTransactions = require('../utility/calculatePendingTransactions')
+const calcPending = require('../utility/calcPending')
 
 //CREATES EXPENSE REQUEST AND UPDATES EXPENSE AND DESCRIPTION ARRAYS WHEN NEW DATA IS AVAILABLE (deprecated)
 router.post('/addexpense', verifyAccessToken, async (req, res) => {
@@ -152,7 +152,8 @@ router.post('/addtransaction', verifyAccessToken, async (req, res) => {
   await groupModel.findByIdAndUpdate(group, { $push: { transactions: newTransaction } }).exec()
 
   updatedGroup = await groupModel.findById(group).exec()
-  const result = calculatePendingTransactions(updatedGroup.transactions, updatedGroup.members)
+  // const result = calculatePendingTransactions(updatedGroup.transactions, updatedGroup.members)
+  const result = calcPending(updatedGroup.transactions, updatedGroup.members)
   await groupModel.findByIdAndUpdate(group, { $set: { pendingTransactions: result.pendingTransactions, totalSpent: result.totalSpent } }, { upsert: true }).exec()
   return res.sendStatus(200)
 })
