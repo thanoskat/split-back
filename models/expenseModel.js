@@ -8,16 +8,15 @@ const expenseSchema = mongoose.Schema({
     group: {
         type: mongoose.Types.ObjectId, ref: 'Group'
     },
-    amount: {
+    amount: [{
         type: Number,
         required: true
-    },
-    description: {
+    }],
+    description: [{
         type: String,
         required: false
-    }
+    }]
 })
 
 const expenseModel = mongoose.model("Expense", expenseSchema);
-
 module.exports = expenseModel;
