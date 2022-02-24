@@ -145,14 +145,14 @@ router.get('/getgrouprequests', verifyAccessToken, async (req, res) => {
     console.log("weeks", Math.trunc(weeks))
 
 
-    if (Math.trunc(weeks) == 0 && Math.trunc(days) == 0 && Math.trunc(hours) == 0 && Math.trunc(mins) == 0) return { timeago: Math.round(secs), format: "sec" }
-    if (Math.trunc(weeks) == 0 && Math.trunc(days) == 0 && Math.trunc(hours) == 0 && Math.trunc(mins) !== 0) return { timeago: Math.round(mins), format: "min" }
-    if (Math.trunc(weeks) == 0 && Math.trunc(days) == 0 && Math.trunc(hours) !== 0 && Math.trunc(hours) == 1) return { timeago: Math.round(hours), format: "hour" }
-    if (Math.trunc(weeks) == 0 && Math.trunc(days) == 0 && Math.trunc(hours) !== 0) return { timeago: Math.round(hours), format: "hours" }
-    if (Math.trunc(weeks) == 0 && Math.trunc(days) !== 0 && Math.trunc(days) == 1) return { timeago: Math.round(days), format: "day" }
-    if (Math.trunc(weeks) == 0 && Math.trunc(days) !== 0) return { timeago: Math.round(days), format: "days" }
-    if (Math.trunc(weeks) !== 0 && Math.trunc(weeks) == 1) return { timeago: Math.round(weeks), format: "week" }
-    if (Math.trunc(weeks) !== 0) return { timeago: Math.round(weeks), format: "weeks" }
+    if (Math.trunc(weeks) == 0 && Math.trunc(days) == 0 && Math.trunc(hours) == 0 && Math.trunc(mins) == 0) return { timeago: Math.trunc(secs), format: "sec" }
+    if (Math.trunc(weeks) == 0 && Math.trunc(days) == 0 && Math.trunc(hours) == 0 && Math.trunc(mins) !== 0) return { timeago: Math.trunc(mins), format: "min" }
+    if (Math.trunc(weeks) == 0 && Math.trunc(days) == 0 && Math.trunc(hours) !== 0 && Math.trunc(hours) == 1) return { timeago: Math.trunc(hours), format: "hour" }
+    if (Math.trunc(weeks) == 0 && Math.trunc(days) == 0 && Math.trunc(hours) !== 0) return { timeago: Math.trunc(hours), format: "hours" }
+    if (Math.trunc(weeks) == 0 && Math.trunc(days) !== 0 && Math.trunc(days) == 1) return { timeago: Math.trunc(days), format: "day" }
+    if (Math.trunc(weeks) == 0 && Math.trunc(days) !== 0) return { timeago: Math.trunc(days), format: "days" }
+    if (Math.trunc(weeks) !== 0 && Math.trunc(weeks) == 1) return { timeago: Math.trunc(weeks), format: "week" }
+    if (Math.trunc(weeks) !== 0) return { timeago: Math.trunc(weeks), format: "weeks" }
 
   }
 
