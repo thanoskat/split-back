@@ -76,19 +76,19 @@ router.post("/creategrouprequest", verifyAccessToken, async (req, res) => {
 router.post("/createmultigrouprequests", verifyAccessToken, async (req, res) => {
   try {
     // Tests if request has already been sent
-    //this test might be reduntant.It's good to exist as a safety measure
+    //this test might be reduntant.It's good to exist as a safety measure 
     //but could be delaying process of sending request
 
     req.body.recipient.forEach(async (recipient) => {
 
       let requestsFound = await requestsModel.countDocuments({
-      requester: toId(req.queryUserId),
-      recipient: recipient,
-      status: 0,
-      groupToJoin: req.body.groupToJoin
+        requester: toId(req.queryUserId),
+        recipient: recipient,
+        status: 0,
+        groupToJoin: req.body.groupToJoin
       }).exec()
 
-    let foundOne = await groupModel.countDocuments({
+      let foundOne = await groupModel.countDocuments({
         _id: req.body.groupToJoin,
         members: recipient
       }).exec()
@@ -113,7 +113,7 @@ router.post("/createmultigrouprequests", verifyAccessToken, async (req, res) => 
         await userModel.findByIdAndUpdate(recipient, { $push: { requests: newReq } }).exec()
 
       }
-     }
+    }
     )
     return res.sendStatus(200)
   }
@@ -127,42 +127,49 @@ router.post("/createmultigrouprequests", verifyAccessToken, async (req, res) => 
 router.get('/getgrouprequests', verifyAccessToken, async (req, res) => {
   const userId = toId(req.queryUserId)
   const getTimeSince = (timestamp) => {
-  const currDate = new Date()
-  const currDatems = currDate.getTime()
-  const stamp=(currDatems-timestamp)
-  let secs,mins,hours,days
-  secs=stamp/1000
-  mins=secs/60
-  hours=mins/60
-  days=hours/24
+    const currDate = new Date()
+    const currDatems = currDate.getTime()
+    const stamp = (currDatems - timestamp)
+    let secs, mins, hours, days
+    secs = stamp / 1000
+    mins = secs / 60
+    hours = mins / 60
+    days = hours / 24
+    weeks = days / 7
 
-  // console.log("secs",secs%10)
-  // console.log("mins",mins%10)
-  // console.log("hours",hours%10)
-  // console.log("days",days%10)
-  
- if(days%10<1 && hours%10<1 && mins%10<1) return {timeago:Math.round(secs),format:"sec"}
- if(days%10<1 && hours%10<1 && mins%10>1) return {timeago:Math.round(mins),format:"min"}
- if(days%10<1 && hours%10>1 && mins%10>1) return {timeago:Math.round(hours),format:"hours"}
- if(days%10>1 && hours%10>1 && mins%10>1) return {timeago:Math.round(days),format:"days"}
 
- 
-    }
+    console.log("secs", Math.trunc(secs))
+    console.log("mins", Math.trunc(mins))
+    console.log("hours", Math.trunc(hours))
+    console.log("days", Math.trunc(days))
+    console.log("weeks", Math.trunc(weeks))
+
+
+    if (Math.trunc(weeks) == 0 && Math.trunc(days) == 0 && Math.trunc(hours) == 0 && Math.trunc(mins) == 0) return { timeago: Math.trunc(secs), format: "sec" }
+    if (Math.trunc(weeks) == 0 && Math.trunc(days) == 0 && Math.trunc(hours) == 0 && Math.trunc(mins) !== 0) return { timeago: Math.trunc(mins), format: "min" }
+    if (Math.trunc(weeks) == 0 && Math.trunc(days) == 0 && Math.trunc(hours) !== 0 && Math.trunc(hours) == 1) return { timeago: Math.trunc(hours), format: "hour" }
+    if (Math.trunc(weeks) == 0 && Math.trunc(days) == 0 && Math.trunc(hours) !== 0) return { timeago: Math.trunc(hours), format: "hours" }
+    if (Math.trunc(weeks) == 0 && Math.trunc(days) !== 0 && Math.trunc(days) == 1) return { timeago: Math.trunc(days), format: "day" }
+    if (Math.trunc(weeks) == 0 && Math.trunc(days) !== 0) return { timeago: Math.trunc(days), format: "days" }
+    if (Math.trunc(weeks) !== 0 && Math.trunc(weeks) == 1) return { timeago: Math.trunc(weeks), format: "week" }
+    if (Math.trunc(weeks) !== 0) return { timeago: Math.trunc(weeks), format: "weeks" }
+
+  }
+
   // const requests = await userModel.findById(userId).populate("requests", "requester recipient groupToJoin status").exec()
   const requests = await requestsModel.find({ recipient: userId }).populate('requester', 'nickname').populate('groupToJoin', 'title').exec()
-  const dateFormatRequests=requests.map(item=>{
-  const container={}
-  container["_id"]=item._id,
-  container["requester"]=item.requester,
-  container["recipient"]=item.recipient
-  container["status"]=item.status,
-  container["groupToJoin"]=item.groupToJoin,
-  container["date"]=getTimeSince(new Date(item.date).getTime())
-
-  return container;
+  const dateFormatRequests = requests.map(item => {
+    const container = {}
+    container["_id"] = item._id,
+    container["requester"] = item.requester,
+    container["recipient"] = item.recipient
+    container["status"] = item.status,
+    container["groupToJoin"] = item.groupToJoin,
+    container["date"] = getTimeSince(new Date(item.date).getTime())
+    return container;
   })
 
-  
+
 
   console.log(dateFormatRequests)
   res.send(dateFormatRequests)
@@ -275,11 +282,6 @@ router.get("/group/:groupID", verifyAccessToken, async (req, res) => {
   res.send(group)
 })
 
-router.get("/:groupId", verifyAccessToken, async (req, res) => {
-  const group = await groupModel.findById(req.params.groupId).populate("members", "nickname")
-  res.send(group)
-})
-
 //GIVEN USER ID GET GROUPS THEY BELONG TO
 router.get("/groupsinuserID/:userID", async (req, res) => {
   const userID = toId(req.params.userID)
@@ -367,6 +369,7 @@ router.post("/requesthandler", verifyAccessToken, async (req, res) => {
   }
 })
 /////////////////////////////////End of Testing/////////////////////////////////////
+
 
 
 module.exports = router;
