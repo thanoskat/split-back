@@ -167,13 +167,15 @@ router.get("/getgroupexpenses/:groupID", verifyAccessToken, async (req, res) => 
       return value;
     }
   }
+
   //console.log("groupID", group)
   try {
-    const expenseArr = await groupModel.findOne({ _id: groupID }).populate({ path: "expenses", populate: { path: "spender", model: "Users" } })
+    const expenseArr = await groupModel.findOne({ _id: groupID }).populate({ path: "expenses", populate: { path: "sender", model: "Users" } })
     const participantArray = expenseArr.expenses
 
     settlepay.debtCalc3(participantArray)
     const result = settlepay.trackerCalc(participantArray)
+    //console.log("result",result)
     const filteredResult = result.filter(isDebtorOrOwned)
     //console.log(filteredResult)
     res.json(filteredResult)
@@ -181,5 +183,4 @@ router.get("/getgroupexpenses/:groupID", verifyAccessToken, async (req, res) => 
     res.sendStatus(500)
   }
 })
-
 module.exports = router

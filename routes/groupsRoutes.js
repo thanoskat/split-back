@@ -276,6 +276,14 @@ router.get("/mygroups", verifyAccessToken, async (req, res) => {
   res.send(groups.groups)
 })
 
+router.get("/:groupId", verifyAccessToken, async (req, res) => {
+  const group = await groupModel.findById(req.params.groupId).populate({ path: "pendingTransactions", populate: {path: "sender receiver", model: "Users" }})
+  .populate({ path: "members", model:"Users"})
+  .populate({ path: "transactions", populate: {path: "sender receiver", model: "Users" }})
+  console.log("group",group)
+  res.send(group)
+})
+
 router.get("/group/:groupID", verifyAccessToken, async (req, res) => {
   const group = await groupModel.findById(req.params.groupID).populate("members", "nickname")
   // console.log(JSON.stringify(group, null, 2))
