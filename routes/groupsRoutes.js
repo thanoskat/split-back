@@ -153,7 +153,7 @@ router.get('/getgrouprequests', verifyAccessToken, async (req, res) => {
     if (Math.trunc(weeks) == 0 && Math.trunc(days) !== 0) return { timeago: Math.trunc(days), format: "days" }
     if (Math.trunc(weeks) !== 0 && Math.trunc(weeks) == 1) return { timeago: Math.trunc(weeks), format: "week" }
     if (Math.trunc(weeks) !== 0) return { timeago: Math.trunc(weeks), format: "weeks" }
-
+    //COMMENT
   }
 
   // const requests = await userModel.findById(userId).populate("requests", "requester recipient groupToJoin status").exec()
