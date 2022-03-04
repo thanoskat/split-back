@@ -8,7 +8,7 @@ const toId = mongoose.Types.ObjectId;
 
 router.get('/', verifyAccessToken, async (req, res) => {
   try{
-   const users = await Users.find()
+   const users = await Users.find().exec()
     res.json(users)
   }
   catch(error){
@@ -19,7 +19,7 @@ router.get('/', verifyAccessToken, async (req, res) => {
 router.get('/profile', verifyAccessToken, async (req, res) => {
   const decodeID = toId(jwt.verify(req.accessToken ,config.ACCESS_TOKEN_SECRET).userId) //this is a userID
   try{
-   const user = await Users.findById({_id:decodeID}).populate("groups","title")
+   const user = await Users.findById({_id:decodeID}).populate("groups","title totalSpent")
     res.json(user)
   }
   catch(error){

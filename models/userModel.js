@@ -36,8 +36,7 @@ const userSchema = new mongoose.Schema({
 
   groups :[{type:mongoose.Types.ObjectId, ref: 'Group' }],
   requests:[{type:mongoose.Types.ObjectId, ref: 'GroupRequest' }],
-  
-
+  expenses:[{type:mongoose.Types.ObjectId, ref: 'Expense' }]
 })
 
 // userSchema.path('email').validate(async (email) => {
