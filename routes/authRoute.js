@@ -107,7 +107,7 @@ router.get('/refreshtoken', async (req, res) => { //generates new access token
     // Sending a response with a new access token.
     const newRefreshToken = generateRefreshToken()
     await sessionModel.findByIdAndUpdate(sessionFound.toObject()._id, { refreshToken: newRefreshToken, previousRefreshToken: refreshToken }).exec()
-    res.setHeader('Set-Cookie', cookie.serialize('refreshToken', newRefreshToken, { secure: true, httpOnly: true, path: '/auth/refreshtoken' }))
+    res.setHeader('Set-Cookie', cookie.serialize('refreshToken', newRefreshToken, { sameSite: 'none', secure: true, httpOnly: true, path: '/auth/refreshtoken' }))
     const newAccessToken = generateAccessToken(sessionFound.userId) //generates new access token
     res.send({ accessToken: newAccessToken })
   }
@@ -123,7 +123,7 @@ router.post('/signout', verifyAccessToken, async (req, res) => {
     // TODO check if userid is correct
     await sessionModel.findByIdAndUpdate(mongoose.Types.ObjectId(req.body.sessionID), { revoked: true }).exec()
     console.log("/auth/signout session revoked")
-    res.setHeader('Set-Cookie', cookie.serialize('refreshToken', ' ', { secure:true, httpOnly: true, path: '/auth/refreshtoken' }))
+    res.setHeader('Set-Cookie', cookie.serialize('refreshToken', ' ', { sameSite: 'none', secure: true, httpOnly: true, path: '/auth/refreshtoken' }))
     res.send("Signed out")
   }
   catch(error) {
