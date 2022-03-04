@@ -52,7 +52,7 @@ const groupSchema = mongoose.Schema({
     },
     receiver: {
       type: mongoose.Types.ObjectId, ref: 'Users',
-      required: false
+      required: true
     },
     amount: {
       type: Number,
