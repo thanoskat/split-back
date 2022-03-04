@@ -17,6 +17,8 @@ const groupsRoutes = require('./routes/groupsRoutes')
 const userInfoRoute = require('./routes/userInfoRoute')
 const expenseRoute = require('./routes/expenseRoute')
 
+// acomment
+
 //Middleware
 app.use(cors({
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
