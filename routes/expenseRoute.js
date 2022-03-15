@@ -26,7 +26,7 @@ router.post('/addexpense', verifyAccessToken, async (req, res) => {
   const description = req.body.description
 
   if (isNaN(amount) || amount < 0) { //this can be also checked at front end
-    console.log("amount not a number or amount is negative")
+    // console.log("amount not a number or amount is negative")
     res.sendStatus(403)
     return false
   }
@@ -67,7 +67,7 @@ router.post('/addexpense2', verifyAccessToken, async (req, res) => {
   const description = req.body.description
 
   if (isNaN(amount) || amount < 0) {
-    console.log("amount not a number or amount is negative")
+    // console.log("amount not a number or amount is negative")
     res.sendStatus(403)
     return false
   }
@@ -78,7 +78,7 @@ router.post('/addexpense2', verifyAccessToken, async (req, res) => {
   }
 
   let foundExpense = await groupModel.countDocuments({ _id: groupID, "expenses.spender": spenderID }).exec()
-  console.log("found", foundExpense)
+  // console.log("found", foundExpense)
 
   //https://docs.mongodb.com/manual/reference/operator/update/positional/?fbclid=IwAR36T5C8vItm0PQoqg2XS3PPXUmadtiS9aiZJegrWmQaRqrE_Ry3IJeXEcA
   if (foundExpense) {//if spender has already created expense subdoc, update that one.

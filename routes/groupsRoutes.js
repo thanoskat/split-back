@@ -76,7 +76,7 @@ router.post("/creategrouprequest", verifyAccessToken, async (req, res) => {
 router.post("/createmultigrouprequests", verifyAccessToken, async (req, res) => {
   try {
     // Tests if request has already been sent
-    //this test might be reduntant.It's good to exist as a safety measure 
+    //this test might be reduntant.It's good to exist as a safety measure
     //but could be delaying process of sending request
 
     req.body.recipient.forEach(async (recipient) => {
@@ -138,11 +138,11 @@ router.get('/getgrouprequests', verifyAccessToken, async (req, res) => {
     weeks = days / 7
 
 
-    console.log("secs", Math.trunc(secs))
-    console.log("mins", Math.trunc(mins))
-    console.log("hours", Math.trunc(hours))
-    console.log("days", Math.trunc(days))
-    console.log("weeks", Math.trunc(weeks))
+    // console.log("secs", Math.trunc(secs))
+    // console.log("mins", Math.trunc(mins))
+    // console.log("hours", Math.trunc(hours))
+    // console.log("days", Math.trunc(days))
+    // console.log("weeks", Math.trunc(weeks))
 
 
     if (Math.trunc(weeks) == 0 && Math.trunc(days) == 0 && Math.trunc(hours) == 0 && Math.trunc(mins) == 0) return { timeago: Math.trunc(secs), format: "sec" }
@@ -171,7 +171,7 @@ router.get('/getgrouprequests', verifyAccessToken, async (req, res) => {
 
 
 
-  console.log(dateFormatRequests)
+  // console.log(dateFormatRequests)
   res.send(dateFormatRequests)
 })
 
@@ -273,14 +273,15 @@ router.get("/mygroups", verifyAccessToken, async (req, res) => {
   const userID = toId(jwt.verify(req.accessToken, config.ACCESS_TOKEN_SECRET).userId)
   const groups = await userModel.findById(userID).populate("groups", "title").exec()
   // console.log(JSON.stringify(groups.groups, null, 2))
-  res.send(groups.groups)
+  setTimeout(() => {res.send(groups.groups)}, 0)
+  // res.send(groups.groups)
 })
 
 router.get("/:groupId", verifyAccessToken, async (req, res) => {
   const group = await groupModel.findById(req.params.groupId).populate({ path: "pendingTransactions", populate: {path: "sender receiver", model: "Users" }})
   .populate({ path: "members", model:"Users"})
   .populate({ path: "transactions", populate: {path: "sender receiver", model: "Users" }})
-  console.log("group",group)
+  // console.log("group",group)
   res.send(group)
 })
 
