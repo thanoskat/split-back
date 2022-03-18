@@ -9,6 +9,13 @@ const verifyAccessToken = require('../middleware/verifyAccessToken')
 const jwt = require('jsonwebtoken');
 const { findById, deleteOne } = require("../models/groupModel");
 const config = process.env
+const calcPending = require('../utility/calcPending')
+
+const updatePendingTransactions = async (groupId) => {
+  group = await groupModel.findById(groupId).exec()
+  const result = calcPending(group.transactions, group.members)
+  await groupModel.findByIdAndUpdate(groupId, { $set: { pendingTransactions: result.pendingTransactions, totalSpent: result.totalSpent } }, { upsert: true }).exec()
+}
 
 //CREATE GROUP WITH USER'S ID. DON'T HAVE TO WORRY ABOUT MULTIPLE GROUPS
 //creators are automatically members of group they create
@@ -138,11 +145,11 @@ router.get('/getgrouprequests', verifyAccessToken, async (req, res) => {
     weeks = days / 7
 
 
-    console.log("secs", Math.trunc(secs))
-    console.log("mins", Math.trunc(mins))
-    console.log("hours", Math.trunc(hours))
-    console.log("days", Math.trunc(days))
-    console.log("weeks", Math.trunc(weeks))
+    // console.log("secs", Math.trunc(secs))
+    // console.log("mins", Math.trunc(mins))
+    // console.log("hours", Math.trunc(hours))
+    // console.log("days", Math.trunc(days))
+    // console.log("weeks", Math.trunc(weeks))
 
 
     if (Math.trunc(weeks) == 0 && Math.trunc(days) == 0 && Math.trunc(hours) == 0 && Math.trunc(mins) == 0) return { timeago: Math.trunc(secs), format: "sec" }
@@ -171,7 +178,7 @@ router.get('/getgrouprequests', verifyAccessToken, async (req, res) => {
 
 
 
-  console.log(dateFormatRequests)
+  // console.log(dateFormatRequests)
   res.send(dateFormatRequests)
 })
 
@@ -215,6 +222,7 @@ router.post("/addUserToGroup", verifyAccessToken, async (req, res) => {
     try {
       //need to test if user has accepted request
       if (await addUserToGroup(groupID, userID)) {
+        await updatePendingTransactions(groupID) //recalculate when new user enters
         res.sendStatus(200)
       }
     }
@@ -280,7 +288,7 @@ router.get("/:groupId", verifyAccessToken, async (req, res) => {
   const group = await groupModel.findById(req.params.groupId).populate({ path: "pendingTransactions", populate: {path: "sender receiver", model: "Users" }})
   .populate({ path: "members", model:"Users"})
   .populate({ path: "transactions", populate: {path: "sender receiver", model: "Users" }})
-  console.log("group",group)
+  // console.log("group",group)
   res.send(group)
 })
 
