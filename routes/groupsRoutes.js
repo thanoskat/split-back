@@ -83,7 +83,7 @@ router.post("/creategrouprequest", verifyAccessToken, async (req, res) => {
 router.post("/createmultigrouprequests", verifyAccessToken, async (req, res) => {
   try {
     // Tests if request has already been sent
-    //this test might be reduntant.It's good to exist as a safety measure 
+    //this test might be reduntant.It's good to exist as a safety measure
     //but could be delaying process of sending request
 
     req.body.recipient.forEach(async (recipient) => {
@@ -281,7 +281,8 @@ router.get("/mygroups", verifyAccessToken, async (req, res) => {
   const userID = toId(jwt.verify(req.accessToken, config.ACCESS_TOKEN_SECRET).userId)
   const groups = await userModel.findById(userID).populate("groups", "title").exec()
   // console.log(JSON.stringify(groups.groups, null, 2))
-  res.send(groups.groups)
+  setTimeout(() => {res.send(groups.groups)}, 0)
+  // res.send(groups.groups)
 })
 
 router.get("/:groupId", verifyAccessToken, async (req, res) => {

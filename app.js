@@ -16,6 +16,7 @@ const getUsersRoute = require('./routes/getUsersRoute')
 const groupsRoutes = require('./routes/groupsRoutes')
 const userInfoRoute = require('./routes/userInfoRoute')
 const expenseRoute = require('./routes/expenseRoute')
+const testRoute = require('./routes/testRoute')
 
 // acomment
 
@@ -31,6 +32,7 @@ app.use('/getusers', getUsersRoute)
 app.use('/userinfo', userInfoRoute)
 app.use('/groups', groupsRoutes)
 app.use('/expense', expenseRoute)
+app.use('/test', testRoute)
 
 //ROUTES
 app.get('/', (req, res) => {

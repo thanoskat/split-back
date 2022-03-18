@@ -20,7 +20,7 @@ router.post('/signup', async (req, res) => {
     res.send(savedUser)
   }
   catch(error) {
-    console.dir(error)
+    console.log(error.message)
     res.send(error.message)
   }
 })
@@ -62,7 +62,7 @@ router.get('/v/:token', async (req, res) => {
     })
   }
   catch(error) {
-    console.dir(error)
+    console.log(error.message)
     res.send(error.message)
   }
 })
@@ -78,43 +78,48 @@ router.post('/sendlink', async (req, res) => {
       })
   }
   catch(error) {
-    console.dir(error)
+    console.log(error.message)
     res.send(error.message)
   }
 })
 
 router.get('/refreshtoken', async (req, res) => { //generates new access token
-  try{
+  try {
     // Getting refresh token from httponly cookie.
-    console.log(`\nreq.headers.cookie = ${req.headers.cookie}`) // DO NOT DELETE
     const refreshToken = cookie.parse(req.headers.cookie).refreshToken
     if(!refreshToken) return res.status(400).send("Refresh cookie not found.")
+    console.log("Old refresh token", refreshToken.slice(refreshToken.length - 10))
+
     // Checking if session exists in db.
-    const sessionFound = await sessionModel.findOne({ refreshToken: refreshToken }).exec()
+    const sessionFound = await sessionModel.findOne({$or: [{ refreshToken: refreshToken}, {previousRefreshToken: refreshToken}]}).exec()
     if(!sessionFound) return res.status(401).send("Session not found.")
+
+    // Checking if refresh token has been used before.
+    if(sessionFound.toObject().previousRefreshToken == refreshToken) return res.status(419).send("Refresh token has been used before.")
+
     // Checking if refresh token has been revoked.
     if(sessionFound.toObject().revoked == true) return res.status(401).send("Refresh token has been revoked.")
-    // Cheching if refresh token has been used before.
-    if(sessionFound.toObject().previousRefreshToken == refreshToken) {
-      await sessionModel.findByIdAndUpdate(sessionFound.toObject()._id, { revoked: true }).exec()
-      return res.status(401).send("Refresh token used twice. Revoking token.")
-    }
+
     // Checking if session is expired.
-    if((sessionFound.toObject().createdAt.getTime() + 120 * 60 * 1000) < Date.now()) {
+    const expInSeconds = (sessionFound.toObject().createdAt.getTime() + 1440 * 60 * 1000 - Date.now())/1000
+    console.log(expInSeconds > 0 ? `Session expires in ${Math.trunc(expInSeconds)} seconds` : `Session expired ${Math.trunc(expInSeconds*-1)} seconds ago`)
+    if((sessionFound.toObject().createdAt.getTime() + 1440 * 60 * 1000) < Date.now()) {
       await sessionModel.findByIdAndUpdate(sessionFound.toObject()._id, { revoked: true }).exec()
       return res.status(401).send("Session is expired.")
     }
+
     // Sending a response with a new access token.
     const newRefreshToken = generateRefreshToken()
     await sessionModel.findByIdAndUpdate(sessionFound.toObject()._id, { refreshToken: newRefreshToken, previousRefreshToken: refreshToken }).exec()
     res.setHeader('Set-Cookie', cookie.serialize('refreshToken', newRefreshToken, { sameSite: 'none', secure: true, httpOnly: true, path: '/auth/refreshtoken' }))
     const newAccessToken = generateAccessToken(sessionFound.userId) //generates new access token
-    res.send({ accessToken: newAccessToken })
+    console.log(`\nNew refresh token ${newRefreshToken.slice(newRefreshToken.length - 10)}. New access token ${newAccessToken.slice(newAccessToken.length - 10)}.`)
+    return res.send({ newAccessToken: newAccessToken })
   }
-  catch(error){
+  catch(error) {
     // Sending 500 internal error for any other error catched.
-    console.dir(error)
-    res.sendStatus(500)
+    console.log(error.message)
+    return res.sendStatus(500)
   }
 })
 
@@ -127,7 +132,7 @@ router.post('/signout', verifyAccessToken, async (req, res) => {
     res.send("Signed out")
   }
   catch(error) {
-    console.dir(error)
+    console.log(error.message)
     res.send("Error while signing out")
   }
 })
@@ -163,7 +168,7 @@ router.get('/getuserinfo', verifyAccessToken, async (req, res) => {
     })
   }
   catch(error) {
-    console.dir(error)
+    console.log(error.message)
   }
 })
 
