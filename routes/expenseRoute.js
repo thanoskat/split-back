@@ -9,11 +9,11 @@ const verifyAccessToken = require('../middleware/verifyAccessToken')
 const jwt = require('jsonwebtoken');
 const config = process.env
 const settlepay = require("../utility/settlePayments")
-const calcPending = require('../utility/calcPending')
+const calcPending2 = require('../utility/calcPending2')
 
 const updatePendingTransactions = async (groupId) => {
   group = await groupModel.findById(groupId).exec()
-  const result = calcPending(group.transactions, group.members)
+  const result = calcPending2(group.transactions, group.members)
   await groupModel.findByIdAndUpdate(groupId, { $set: { pendingTransactions: result.pendingTransactions, totalSpent: result.totalSpent } }, { upsert: true }).exec()
 }
 
@@ -134,7 +134,7 @@ router.post('/addtransaction', verifyAccessToken, async (req, res) => {
   const sender = toId(req.body.sender)
   // TODO check if sender is user
   let receiver
-  if(req.body.receiver !== '') {
+  if (req.body.receiver !== '') {
     receiver = toId(req.body.receiver)
   }
   else {
@@ -144,12 +144,15 @@ router.post('/addtransaction', verifyAccessToken, async (req, res) => {
   const amount = req.body.amount
   // TODO check if amount has correct format
   const description = req.body.description
+  const tobeSharedWith = req.body. tobeSharedWith.map(id=>toId(id))
+  //console.log("shareWith",shareWith)
 
   const newTransaction = {
     sender: sender,
     receiver: receiver,
     amount: amount,
-    description: description
+    description: description,
+    tobeSharedWith: tobeSharedWith
   }
 
   await groupModel.findByIdAndUpdate(groupId, { $push: { transactions: newTransaction } }).exec()

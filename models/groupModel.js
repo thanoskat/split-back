@@ -43,6 +43,10 @@ const groupSchema = mongoose.Schema({
     description: {
       type: String,
       required: false
+    },
+    tobeSharedWith:{
+      type:Array,
+      required:false
     }
   }],
   pendingTransactions: [{
