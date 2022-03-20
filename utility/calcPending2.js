@@ -2,7 +2,7 @@ const currency = require("currency.js");
 
 const calcPending2 = (transactions, members) => {
 
-  // Initialize spenders array with 0 balances
+  // Initialize spenders array with 0 balances and 0 for the personalized array of money to equilibrium
   const spenders = []
   members.map(member => {
     spenders.push({
@@ -16,22 +16,22 @@ const calcPending2 = (transactions, members) => {
   // Initialize total amount spent outside of group
   let totalSpent = currency(0, { symbol: '' })
 
-
-  //console.log("to Be Share with IDs",transactions.map(transaction=>transaction.tobeSharedWith.map(share=>share)))
   // Loop through transactions
   transactions.map(transaction => {
     // If receiver is outside of group (null) add the expense to total
     if (transaction.receiver == null) {
       totalSpent = totalSpent.add(transaction.amount)
 
-
+      //divide expense over the number of people who will share 
       const distributedAmountArray = currency(transaction.amount)
-        .distribute(transaction.tobeSharedWith.length)
+      .distribute(transaction.tobeSharedWith.length)
 
+      //for every tx and every spender, update their personalized array of money to equilibrium
       transaction.tobeSharedWith.map((shareID, index) => {
         spenders.map(spender => {
           if (spender.id.toString() == shareID.toString()) {          
-           spender.moneySummedAndDistributed=currency(spender.moneySummedAndDistributed).add(distributedAmountArray[index])   
+           spender.moneySummedAndDistributed=currency(spender.moneySummedAndDistributed)
+           .add(distributedAmountArray[index])   
           }
         })
       })
@@ -49,7 +49,7 @@ const calcPending2 = (transactions, members) => {
     })
   })
 
-  console.log("spenders", spenders)
+  //console.log("spenders", spenders)
 
   // Separate spenders in debtors and creditors
   const debtors = []
@@ -58,8 +58,9 @@ const calcPending2 = (transactions, members) => {
   //console.log(moneyArray)
 
   spenders.map((spender, index) => {
-    debtOrCredit = currency(spender.balance).add(moneyArray[index])
-
+    //debtOrCredit = currency(spender.balance).add(moneyArray[index])
+    debtOrCredit = currency(spender.balance).add(spender.moneySummedAndDistributed.value)
+    console.log("debtOrCredit",debtOrCredit)//check against excel
     // if debt
     if (debtOrCredit.value > 0) {
       debtors.push({

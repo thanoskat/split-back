@@ -144,7 +144,14 @@ router.post('/addtransaction', verifyAccessToken, async (req, res) => {
   const amount = req.body.amount
   // TODO check if amount has correct format
   const description = req.body.description
-  const tobeSharedWith = req.body. tobeSharedWith.map(id=>toId(id))
+
+  let tobeSharedWith
+  if(req.body.tobeSharedWith!==""){
+    tobeSharedWith = req.body.tobeSharedWith.map(id=>toId(id))
+  }else{
+    tobeSharedWith = null
+  }
+  
   //console.log("shareWith",shareWith)
 
   const newTransaction = {
