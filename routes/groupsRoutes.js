@@ -9,11 +9,11 @@ const verifyAccessToken = require('../middleware/verifyAccessToken')
 const jwt = require('jsonwebtoken');
 const { findById, deleteOne } = require("../models/groupModel");
 const config = process.env
-const calcPending = require('../utility/calcPending')
+const calcPending2 = require('../utility/calcPending2')
 
 const updatePendingTransactions = async (groupId) => {
   group = await groupModel.findById(groupId).exec()
-  const result = calcPending(group.transactions, group.members)
+  const result = calcPending2(group.expenses, group.transfers, group.members)
   await groupModel.findByIdAndUpdate(groupId, { $set: { pendingTransactions: result.pendingTransactions, totalSpent: result.totalSpent } }, { upsert: true }).exec()
 }
 
@@ -175,9 +175,6 @@ router.get('/getgrouprequests', verifyAccessToken, async (req, res) => {
     container["date"] = getTimeSince(new Date(item.date).getTime())
     return container;
   })
-
-
-
   // console.log(dateFormatRequests)
   res.send(dateFormatRequests)
 })
@@ -289,9 +286,21 @@ router.get("/:groupId", verifyAccessToken, async (req, res) => {
   const group = await groupModel.findById(req.params.groupId).populate({ path: "pendingTransactions", populate: {path: "sender receiver", model: "Users" }})
   .populate({ path: "members", model:"Users"})
   .populate({ path: "transactions", populate: {path: "sender receiver", model: "Users" }})
-  // console.log("group",group)
+  //console.log("ran",group)
   res.send(group)
 })
+
+//GET WHOLE GROUP 
+router.get("/", verifyAccessToken, async (req, res) => {
+  const group = await groupModel.find()
+  .populate({ path: "pendingTransactions", populate: {path: "sender receiver", model: "Users" }})
+  .populate({ path: "members", model:"Users"})
+  .populate({ path: "transfers", populate: {path: "sender receiver", model: "Users" }})
+  //console.log("ran",group)
+  res.send(group)
+})
+
+
 
 router.get("/group/:groupID", verifyAccessToken, async (req, res) => {
   const group = await groupModel.findById(req.params.groupID).populate("members", "nickname")

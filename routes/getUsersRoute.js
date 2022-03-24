@@ -19,9 +19,13 @@ router.get('/', verifyAccessToken, async (req, res) => {
 router.get('/profile', verifyAccessToken, async (req, res) => {
   const decodeID = toId(jwt.verify(req.accessToken ,config.ACCESS_TOKEN_SECRET).userId) //this is a userID
   try{
-   const user = await Users.findById({_id:decodeID}).populate("groups","title totalSpent")
+   const user = await Users.findById({_id:decodeID}).populate({path:"groups",populate:{path:"pendingTransactions",populate:{path:"sender receiver", model:"Users"}}})
+    .populate({path:"groups",populate:{path:"members", model:"Users"}})
+    .populate({path:"groups",populate:{path:"transactions",populate:{path:"sender receiver", model:"Users"}}})
     res.json(user)
+    //console.log(user)
   }
+  
   catch(error){
     res.send(error.message)
   }

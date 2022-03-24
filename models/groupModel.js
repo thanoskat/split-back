@@ -11,22 +11,50 @@ const Schema = mongoose.Schema;
 const groupSchema = mongoose.Schema({
   creator: { type: mongoose.Types.ObjectId, ref: 'Users' },
   title: String,
-
+  tags: [{
+    name: String,
+    color: String,
+    required: false
+  }],
   members: [{ type: mongoose.Types.ObjectId, ref: 'Users' }],
   expenses: [{
-    spender: {
+    sender: {
       type: mongoose.Types.ObjectId, ref: 'Users',
       required: true
     },
-    amount: [{
+    amount: {
       type: Number,
       required: true
-    }],
-    description: [{
+    },
+    description: {
       type: String,
+      required: false,
+      
+    },
+    tobeSharedWith: [{
+      type: mongoose.Types.ObjectId, ref: 'Users',
       required: false
     }]
   }],
+  transfers:[{
+    sender: {
+      type: mongoose.Types.ObjectId, ref: 'Users',
+      required: true
+    },
+    receiver: {
+      type: mongoose.Types.ObjectId, ref: 'Users',
+      required: false
+    },
+    amount: {
+      type: Number,
+      required: true
+    },
+    description: {
+      type: String,
+      required: false
+    }
+  }],
+  //Transactions to be removed
   transactions: [{
     sender: {
       type: mongoose.Types.ObjectId, ref: 'Users',
@@ -44,10 +72,10 @@ const groupSchema = mongoose.Schema({
       type: String,
       required: false
     },
-    tobeSharedWith:{
-      type:Array,
-      required:false
-    }
+    tobeSharedWith: [{
+      type: mongoose.Types.ObjectId, ref: 'Users',
+      required: false
+    }]
   }],
   pendingTransactions: [{
     sender: {
