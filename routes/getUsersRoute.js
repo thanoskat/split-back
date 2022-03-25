@@ -21,7 +21,8 @@ router.get('/profile', verifyAccessToken, async (req, res) => {
   try{
    const user = await Users.findById({_id:decodeID}).populate({path:"groups",populate:{path:"pendingTransactions",populate:{path:"sender receiver", model:"Users"}}})
     .populate({path:"groups",populate:{path:"members", model:"Users"}})
-    .populate({path:"groups",populate:{path:"transactions",populate:{path:"sender receiver", model:"Users"}}})
+    .populate({path:"groups",populate:{path:"transfers",populate:{path:"sender receiver", model:"Users"}}})
+    .populate({path:"groups",populate:{path:"expenses",populate:{path:"sender ", model:"Users"}}})
     res.json(user)
     //console.log(user)
   }
