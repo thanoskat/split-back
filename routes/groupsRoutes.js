@@ -290,11 +290,12 @@ router.get("/:groupId", verifyAccessToken, async (req, res) => {
   res.send(group)
 })
 
-//GET WHOLE GROUP 
+//GET WHOLE GROUP
 router.get("/", verifyAccessToken, async (req, res) => {
   const group = await groupModel.find()
   .populate({ path: "pendingTransactions", populate: {path: "sender receiver", model: "Users" }})
   .populate({ path: "members", model:"Users"})
+  .populate({ path: "expenses", populate: {path: "sender", model: "Users" }})
   .populate({ path: "transfers", populate: {path: "sender receiver", model: "Users" }})
   //console.log("ran",group)
   res.send(group)
