@@ -11,7 +11,7 @@ const Schema = mongoose.Schema;
 const groupSchema = mongoose.Schema({
   creator: { type: mongoose.Types.ObjectId, ref: 'Users' },
   title: String,
-  tags: [{
+  groupTags: [{
     name: String,
     color: String,
     required: false
@@ -29,14 +29,20 @@ const groupSchema = mongoose.Schema({
     description: {
       type: String,
       required: false,
-      
+
     },
     tobeSharedWith: [{
       type: mongoose.Types.ObjectId, ref: 'Users',
       required: false
+    }],
+    expenseTags: [{
+      type: mongoose.Types.ObjectId,
+      name: String,
+      color: String,
+      required: false
     }]
   }],
-  transfers:[{
+  transfers: [{
     sender: {
       type: mongoose.Types.ObjectId, ref: 'Users',
       required: true

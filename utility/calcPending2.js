@@ -61,14 +61,14 @@ const calcPending2 = (expenses,transfers, members) => {
   const creditors = []
   //const moneyArray = currency(totalSpent).distribute(spenders.length)
   //console.log(moneyArray)
-  console.log("START")
+  //console.log("START")
   spenders.map((spender) => {
     //debtOrCredit = currency(spender.balance).add(moneyArray[index])
     debtOrCredit = currency(spender.balance).add(spender.moneySummedAndDistributed.value)
-    console.log("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-    console.log("moneyArr",spender.moneySummedAndDistributed.value)
-    console.log("debtOrCredit",debtOrCredit)//check against excel
-    console.log("balance",spender.balance)
+    // console.log("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+    // console.log("moneyArr",spender.moneySummedAndDistributed.value)
+    // console.log("debtOrCredit",debtOrCredit)//check against excel
+    // console.log("balance",spender.balance)
     // if debt
     if (debtOrCredit.value > 0) {
       debtors.push({

@@ -130,29 +130,14 @@ router.post('/addexpense2', verifyAccessToken, async (req, res) => {
 router.post('/addexpense', verifyAccessToken, async (req, res) => {
   const user = jwt.verify(req.accessToken, config.ACCESS_TOKEN_SECRET).userId
   const groupId = toId(req.body.groupId)
-  // TODO check if user belongs to group
   const sender = toId(req.body.sender)
-  // TODO check if sender is user
-  // let receiver
-  // if (req.body.receiver !== '') {
-  //   receiver = toId(req.body.receiver)
-  // }
-  // else {
-  //   receiver = null
-  // }
-  // TODO check if receiver belongs to group
   const amount = req.body.amount
-  // TODO check if amount has correct format
   const description = req.body.description
+  const tobeSharedWith = req.body.tobeSharedWith.map(id => toId(id))
+  const groupTags = req.body.groupTags
+  const expenseTags = req.body.expenseTags
 
-  let tobeSharedWith
-  if(req.body.tobeSharedWith!==""){
-    tobeSharedWith = req.body.tobeSharedWith.map(id=>toId(id))
-  }else{
-    tobeSharedWith = null
-  }
-  
-  //console.log("shareWith",shareWith)
+  console.log(groupTags, expenseTags)
 
   const newExpense = {
     sender: sender,
@@ -160,7 +145,9 @@ router.post('/addexpense', verifyAccessToken, async (req, res) => {
     description: description,
     tobeSharedWith: tobeSharedWith
   }
-  await groupModel.findByIdAndUpdate(groupId, { $push: { expenses: newExpense } }).exec()
+
+  await groupModel.findByIdAndUpdate(groupId, { $push: { expenses: newExpense,groupTags: groupTags } }).exec()
+  //await groupModel.findByIdAndUpdate(groupId, { $push: { groupTags: groupTags } }).exec()
   await updatePendingTransactions(groupId)
   return res.sendStatus(200)
 })
@@ -171,13 +158,13 @@ router.post('/addtransfer', verifyAccessToken, async (req, res) => {
   // TODO check if user belongs to group
   const sender = toId(req.body.sender)
   // not null anymore
-  const receiver =toId(req.body.receiver)
-  
+  const receiver = toId(req.body.receiver)
+
   // TODO check if receiver belongs to group
   const amount = req.body.amount
   // TODO check if amount has correct format
   const description = req.body.description
-  
+
   //console.log("shareWith",shareWith)
 
   const newTransfer = {
