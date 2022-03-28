@@ -9,16 +9,16 @@ const verifyAccessToken = require('../middleware/verifyAccessToken')
 const jwt = require('jsonwebtoken');
 const config = process.env
 const settlepay = require("../utility/settlePayments")
-const calcPending = require('../utility/calcPending')
+const calcPending2 = require('../utility/calcPending2')
 
 const updatePendingTransactions = async (groupId) => {
   group = await groupModel.findById(groupId).exec()
-  const result = calcPending(group.transactions, group.members)
+  const result = calcPending2(group.expenses, group.transfers, group.members)
   await groupModel.findByIdAndUpdate(groupId, { $set: { pendingTransactions: result.pendingTransactions, totalSpent: result.totalSpent } }, { upsert: true }).exec()
 }
 
 //CREATES EXPENSE REQUEST AND UPDATES EXPENSE AND DESCRIPTION ARRAYS WHEN NEW DATA IS AVAILABLE (deprecated)
-router.post('/addexpense', verifyAccessToken, async (req, res) => {
+router.post('/addexpense1', verifyAccessToken, async (req, res) => {
 
   const groupID = toId(req.body.groupID);
   const amount = req.body.amount;
@@ -127,32 +127,54 @@ router.post('/addexpense2', verifyAccessToken, async (req, res) => {
   }
 })
 
-router.post('/addtransaction', verifyAccessToken, async (req, res) => {
+router.post('/addexpense', verifyAccessToken, async (req, res) => {
+  const user = jwt.verify(req.accessToken, config.ACCESS_TOKEN_SECRET).userId
+  const groupId = toId(req.body.groupId)
+  const sender = toId(req.body.sender)
+  const amount = req.body.amount
+  const description = req.body.description
+  const tobeSharedWith = req.body.tobeSharedWith.map(id => toId(id))
+  const groupTags = req.body.groupTags
+  const expenseTags = req.body.expenseTags
+
+  console.log(groupTags, expenseTags)
+
+  const newExpense = {
+    sender: sender,
+    amount: amount,
+    description: description,
+    tobeSharedWith: tobeSharedWith
+  }
+
+  await groupModel.findByIdAndUpdate(groupId, { $push: { expenses: newExpense,groupTags: groupTags } }).exec()
+  //await groupModel.findByIdAndUpdate(groupId, { $push: { groupTags: groupTags } }).exec()
+  await updatePendingTransactions(groupId)
+  return res.sendStatus(200)
+})
+
+router.post('/addtransfer', verifyAccessToken, async (req, res) => {
   const user = jwt.verify(req.accessToken, config.ACCESS_TOKEN_SECRET).userId
   const groupId = toId(req.body.groupId)
   // TODO check if user belongs to group
   const sender = toId(req.body.sender)
-  // TODO check if sender is user
-  let receiver
-  if(req.body.receiver !== '') {
-    receiver = toId(req.body.receiver)
-  }
-  else {
-    receiver = null
-  }
+  // not null anymore
+  const receiver = toId(req.body.receiver)
+
   // TODO check if receiver belongs to group
   const amount = req.body.amount
   // TODO check if amount has correct format
   const description = req.body.description
 
-  const newTransaction = {
+  //console.log("shareWith",shareWith)
+
+  const newTransfer = {
     sender: sender,
     receiver: receiver,
     amount: amount,
     description: description
   }
 
-  await groupModel.findByIdAndUpdate(groupId, { $push: { transactions: newTransaction } }).exec()
+  await groupModel.findByIdAndUpdate(groupId, { $push: { transfers: newTransfer } }).exec()
   await updatePendingTransactions(groupId)
   return res.sendStatus(200)
 })
