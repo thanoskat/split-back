@@ -127,6 +127,14 @@ router.post('/addexpense2', verifyAccessToken, async (req, res) => {
   }
 })
 
+router.post('/addtag', verifyAccessToken, async (req, res) => {
+  jwt.verify(req.accessToken, config.ACCESS_TOKEN_SECRET).userId
+  const groupId = toId(req.body.groupId)
+  const groupTag = req.body.groupTag
+  await groupModel.findByIdAndUpdate(groupId, { $push: { groupTags: groupTag } }).exec()
+  return res.sendStatus(200)
+})
+
 router.post('/addexpense', verifyAccessToken, async (req, res) => {
   const user = jwt.verify(req.accessToken, config.ACCESS_TOKEN_SECRET).userId
   const groupId = toId(req.body.groupId)
@@ -134,19 +142,19 @@ router.post('/addexpense', verifyAccessToken, async (req, res) => {
   const amount = req.body.amount
   const description = req.body.description
   const tobeSharedWith = req.body.tobeSharedWith.map(id => toId(id))
-  const groupTags = req.body.groupTags
   const expenseTags = req.body.expenseTags
 
-  console.log(groupTags, expenseTags)
-
+  console.log(expenseTags)
+ 
   const newExpense = {
     sender: sender,
     amount: amount,
     description: description,
-    tobeSharedWith: tobeSharedWith
+    tobeSharedWith: tobeSharedWith,
+    expenseTags:expenseTags
   }
 
-  await groupModel.findByIdAndUpdate(groupId, { $push: { expenses: newExpense,groupTags: groupTags } }).exec()
+  await groupModel.findByIdAndUpdate(groupId, { $push: { expenses: newExpense} }).exec()
   //await groupModel.findByIdAndUpdate(groupId, { $push: { groupTags: groupTags } }).exec()
   await updatePendingTransactions(groupId)
   return res.sendStatus(200)
