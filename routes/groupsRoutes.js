@@ -276,10 +276,8 @@ router.get("/groupsbycreator", verifyAccessToken, async (req, res) => {
 
 router.get("/mygroups", verifyAccessToken, async (req, res) => {
   const userID = toId(jwt.verify(req.accessToken, config.ACCESS_TOKEN_SECRET).userId)
-  const groups = await userModel.findById(userID).populate("groups", "title").exec()
-  // console.log(JSON.stringify(groups.groups, null, 2))
-  setTimeout(() => {res.send(groups.groups)}, 0)
-  // res.send(groups.groups)
+  const groups = await userModel.findById(userID).populate('groups', ['title', 'members']).exec()
+  return res.send(groups.groups)
 })
 
 router.get("/:groupId", verifyAccessToken, async (req, res) => {
@@ -301,7 +299,16 @@ router.get("/", verifyAccessToken, async (req, res) => {
   res.send(group)
 })
 
-
+// Get group by id
+router.post("/getgroup", verifyAccessToken, async (req, res) => {
+  groupId = req.body.groupid
+  const group = await groupModel.findById(req.body.groupid)
+  .populate({ path: "pendingTransactions", populate: {path: "sender receiver", model: "Users" }})
+  .populate({ path: "members", model:"Users"})
+  .populate({ path: "expenses", populate: {path: "sender", model: "Users" }})
+  .populate({ path: "transfers", populate: {path: "sender receiver", model: "Users" }}).exec()
+  res.send(group)
+})
 
 router.get("/group/:groupID", verifyAccessToken, async (req, res) => {
   const group = await groupModel.findById(req.params.groupID).populate("members", "nickname")
