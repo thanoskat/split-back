@@ -36,7 +36,6 @@ const groupSchema = mongoose.Schema({
       required: false
     }],
     expenseTags: [{
-      type: mongoose.Types.ObjectId,
       name: String,
       color: String,
       required: false
