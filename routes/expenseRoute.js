@@ -128,7 +128,8 @@ router.post('/addexpense2', verifyAccessToken, async (req, res) => {
 })
 
 router.post('/addtag', verifyAccessToken, async (req, res) => {
-  jwt.verify(req.accessToken, config.ACCESS_TOKEN_SECRET).userId
+   // const user = jwt.verify(req.accessToken, config.ACCESS_TOKEN_SECRET).userId
+  console.log(req.body.groupId)
   const groupId = toId(req.body.groupId)
   const groupTag = req.body.groupTag
   await groupModel.findByIdAndUpdate(groupId, { $push: { groupTags: groupTag } }).exec()
@@ -136,7 +137,7 @@ router.post('/addtag', verifyAccessToken, async (req, res) => {
 })
 
 router.post('/addexpense', verifyAccessToken, async (req, res) => {
-  const user = jwt.verify(req.accessToken, config.ACCESS_TOKEN_SECRET).userId
+   // const user = jwt.verify(req.accessToken, config.ACCESS_TOKEN_SECRET).userId
   const groupId = toId(req.body.groupId)
   const sender = toId(req.body.sender)
   const amount = req.body.amount
@@ -161,7 +162,7 @@ router.post('/addexpense', verifyAccessToken, async (req, res) => {
 })
 
 router.post('/addtransfer', verifyAccessToken, async (req, res) => {
-  const user = jwt.verify(req.accessToken, config.ACCESS_TOKEN_SECRET).userId
+  // const user = jwt.verify(req.accessToken, config.ACCESS_TOKEN_SECRET).userId
   const groupId = toId(req.body.groupId)
   // TODO check if user belongs to group
   const sender = toId(req.body.sender)
