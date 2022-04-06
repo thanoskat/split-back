@@ -128,16 +128,23 @@ router.post('/addexpense2', verifyAccessToken, async (req, res) => {
 })
 
 router.post('/addtag', verifyAccessToken, async (req, res) => {
-   // const user = jwt.verify(req.accessToken, config.ACCESS_TOKEN_SECRET).userId
-  console.log(req.body.groupId)
+  // const user = jwt.verify(req.accessToken, config.ACCESS_TOKEN_SECRET).userId
+  //console.log(req.body.groupId)
   const groupId = toId(req.body.groupId)
   const groupTag = req.body.groupTag
   await groupModel.findByIdAndUpdate(groupId, { $push: { groupTags: groupTag } }).exec()
   return res.sendStatus(200)
 })
 
+router.post('/deletetag', verifyAccessToken, async (req, res) => {
+  const groupId = toId(req.body.groupId)
+  const groupTag = req.body.groupTag 
+  await groupModel.findByIdAndUpdate(groupId, { $pull: { groupTags: groupTag } }).exec()
+  return res.sendStatus(200)
+})
+
 router.post('/addexpense', verifyAccessToken, async (req, res) => {
-   // const user = jwt.verify(req.accessToken, config.ACCESS_TOKEN_SECRET).userId
+  // const user = jwt.verify(req.accessToken, config.ACCESS_TOKEN_SECRET).userId
   const groupId = toId(req.body.groupId)
   const sender = toId(req.body.sender)
   const amount = req.body.amount
@@ -146,16 +153,16 @@ router.post('/addexpense', verifyAccessToken, async (req, res) => {
   const expenseTags = req.body.expenseTags
 
   console.log(expenseTags)
- 
+
   const newExpense = {
     sender: sender,
     amount: amount,
     description: description,
     tobeSharedWith: tobeSharedWith,
-    expenseTags:expenseTags
+    expenseTags: expenseTags
   }
 
-  await groupModel.findByIdAndUpdate(groupId, { $push: { expenses: newExpense} }).exec()
+  await groupModel.findByIdAndUpdate(groupId, { $push: { expenses: newExpense } }).exec()
   //await groupModel.findByIdAndUpdate(groupId, { $push: { groupTags: groupTags } }).exec()
   await updatePendingTransactions(groupId)
   return res.sendStatus(200)
@@ -187,6 +194,7 @@ router.post('/addtransfer', verifyAccessToken, async (req, res) => {
   await updatePendingTransactions(groupId)
   return res.sendStatus(200)
 })
+
 
 //Gets all expenses on a specific group ID and calculates settlements
 //check settlePayments functions one by one and update variables and you're set.
