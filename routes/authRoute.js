@@ -94,8 +94,8 @@ router.get('/refreshtoken', async (req, res) => { //generates new access token
     const sessionFound = await sessionModel.findOne({$or: [{ refreshToken: refreshToken}, {previousRefreshToken: refreshToken}]}).exec()
     if(!sessionFound) return res.status(401).send("Session not found.")
 
-    // Checking if refresh token has been used before.
-    if(sessionFound.toObject().previousRefreshToken == refreshToken) return res.status(419).send("Refresh token has been used before.")
+    // Checking if refresh token has been used before. 419
+    if(sessionFound.toObject().previousRefreshToken == refreshToken) return res.status(401).send("Refresh token has been used before.")
 
     // Checking if refresh token has been revoked.
     if(sessionFound.toObject().revoked == true) return res.status(401).send("Refresh token has been revoked.")
@@ -114,6 +114,8 @@ router.get('/refreshtoken', async (req, res) => { //generates new access token
     res.setHeader('Set-Cookie', cookie.serialize('refreshToken', newRefreshToken, { sameSite: 'none', secure: true, httpOnly: true, path: '/auth/refreshtoken' }))
     const newAccessToken = generateAccessToken(sessionFound.userId) //generates new access token
     console.log(`\nNew refresh token ${newRefreshToken.slice(newRefreshToken.length - 10)}. New access token ${newAccessToken.slice(newAccessToken.length - 10)}.`)
+    // setTimeout(() => res.send({ newAccessToken: newAccessToken }), 5000)
+    // return 200
     return res.send({ newAccessToken: newAccessToken })
   }
   catch(error) {
