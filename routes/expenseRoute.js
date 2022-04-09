@@ -12,9 +12,15 @@ const settlepay = require("../utility/settlePayments")
 const calcPending2 = require('../utility/calcPending2')
 
 const updatePendingTransactions = async (groupId) => {
-  group = await groupModel.findById(groupId).exec()
+  const group = await groupModel.findById(groupId).exec()
   const result = calcPending2(group.expenses, group.transfers, group.members)
-  await groupModel.findByIdAndUpdate(groupId, { $set: { pendingTransactions: result.pendingTransactions, totalSpent: result.totalSpent } }, { upsert: true }).exec()
+  const updatedGroup = await groupModel.findByIdAndUpdate(groupId, { $set: { pendingTransactions: result.pendingTransactions, totalSpent: result.totalSpent } }, { upsert: true, returnDocument: "after" })
+    .populate({ path: "pendingTransactions", populate: { path: "sender receiver", model: "Users" } })
+    .populate({ path: "members", model: "Users" })
+    .populate({ path: "expenses", populate: { path: "sender", model: "Users" } })
+    .populate({ path: "transfers", populate: { path: "sender receiver", model: "Users" } }).exec()
+
+  return (updatedGroup)
 }
 
 //CREATES EXPENSE REQUEST AND UPDATES EXPENSE AND DESCRIPTION ARRAYS WHEN NEW DATA IS AVAILABLE (deprecated)
@@ -145,12 +151,12 @@ router.post('/deletetag', verifyAccessToken, async (req, res) => {
   const groupId = toId(req.body.groupId)
   const groupTag = req.body.groupTag
   const group = await groupModel.findByIdAndUpdate(groupId, { $pull: { groupTags: groupTag } }, { returnDocument: "after" })
-  .populate({ path: "pendingTransactions", populate: { path: "sender receiver", model: "Users" } })
-  .populate({ path: "members", model: "Users" })
-  .populate({ path: "expenses", populate: { path: "sender", model: "Users" } })
-  .populate({ path: "transfers", populate: { path: "sender receiver", model: "Users" } }).exec()
+    .populate({ path: "pendingTransactions", populate: { path: "sender receiver", model: "Users" } })
+    .populate({ path: "members", model: "Users" })
+    .populate({ path: "expenses", populate: { path: "sender", model: "Users" } })
+    .populate({ path: "transfers", populate: { path: "sender receiver", model: "Users" } }).exec()
 
-return res.send(group)
+  return res.send(group)
 
 })
 
@@ -163,8 +169,6 @@ router.post('/addexpense', verifyAccessToken, async (req, res) => {
   const tobeSharedWith = req.body.tobeSharedWith.map(id => toId(id))
   const expenseTags = req.body.expenseTags
 
-  console.log(expenseTags)
-
   const newExpense = {
     sender: sender,
     amount: amount,
@@ -174,9 +178,8 @@ router.post('/addexpense', verifyAccessToken, async (req, res) => {
   }
 
   await groupModel.findByIdAndUpdate(groupId, { $push: { expenses: newExpense } }).exec()
-  //await groupModel.findByIdAndUpdate(groupId, { $push: { groupTags: groupTags } }).exec()
-  await updatePendingTransactions(groupId)
-  return res.sendStatus(200)
+  const group = await updatePendingTransactions(groupId)
+  return res.send(group)
 })
 
 router.post('/addtransfer', verifyAccessToken, async (req, res) => {

@@ -39,7 +39,11 @@ const groupSchema = mongoose.Schema({
       name: String,
       color: String,
       required: false
-    }]
+    }],
+    createdAt: {
+      type: Date,
+      default: Date.now
+    },
   }],
   transfers: [{
     sender: {
@@ -99,7 +103,11 @@ const groupSchema = mongoose.Schema({
   totalSpent: {
     type: Number,
     default: 0
-  }
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now //Date.now because Date.now is a function that will be run when you make objects. Date.now() is the date that your models.js was parsed. Ie, if you use Date.now() all your objects will have the same date, and that will be the date models was parsed
+  },
 })
 
 //https://stackoverflow.com/questions/20009122/removing-many-to-many-reference-in-mongoose
