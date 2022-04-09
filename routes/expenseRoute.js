@@ -132,15 +132,26 @@ router.post('/addtag', verifyAccessToken, async (req, res) => {
   //console.log(req.body.groupId)
   const groupId = toId(req.body.groupId)
   const groupTag = req.body.groupTag
-  await groupModel.findByIdAndUpdate(groupId, { $push: { groupTags: groupTag } }).exec()
-  return res.sendStatus(200)
+  const group = await groupModel.findByIdAndUpdate(groupId, { $push: { groupTags: groupTag } }, { returnDocument: "after" })
+    .populate({ path: "pendingTransactions", populate: { path: "sender receiver", model: "Users" } })
+    .populate({ path: "members", model: "Users" })
+    .populate({ path: "expenses", populate: { path: "sender", model: "Users" } })
+    .populate({ path: "transfers", populate: { path: "sender receiver", model: "Users" } }).exec()
+
+  return res.send(group)
 })
 
 router.post('/deletetag', verifyAccessToken, async (req, res) => {
   const groupId = toId(req.body.groupId)
-  const groupTag = req.body.groupTag 
-  await groupModel.findByIdAndUpdate(groupId, { $pull: { groupTags: groupTag } }).exec()
-  return res.sendStatus(200)
+  const groupTag = req.body.groupTag
+  const group = await groupModel.findByIdAndUpdate(groupId, { $pull: { groupTags: groupTag } }, { returnDocument: "after" })
+  .populate({ path: "pendingTransactions", populate: { path: "sender receiver", model: "Users" } })
+  .populate({ path: "members", model: "Users" })
+  .populate({ path: "expenses", populate: { path: "sender", model: "Users" } })
+  .populate({ path: "transfers", populate: { path: "sender receiver", model: "Users" } }).exec()
+
+return res.send(group)
+
 })
 
 router.post('/addexpense', verifyAccessToken, async (req, res) => {
