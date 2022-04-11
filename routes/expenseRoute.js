@@ -138,7 +138,7 @@ router.post('/addtag', verifyAccessToken, async (req, res) => {
 
 router.post('/deletetag', verifyAccessToken, async (req, res) => {
   const groupId = toId(req.body.groupId)
-  const groupTag = req.body.groupTag 
+  const groupTag = req.body.groupTag
   await groupModel.findByIdAndUpdate(groupId, { $pull: { groupTags: groupTag } }).exec()
   return res.sendStatus(200)
 })
@@ -163,6 +163,15 @@ router.post('/addexpense', verifyAccessToken, async (req, res) => {
   }
 
   await groupModel.findByIdAndUpdate(groupId, { $push: { expenses: newExpense } }).exec()
+  //await groupModel.findByIdAndUpdate(groupId, { $push: { groupTags: groupTags } }).exec()
+  await updatePendingTransactions(groupId)
+  return res.sendStatus(200)
+})
+
+router.post('/delete', verifyAccessToken, async (req, res) => {
+  const groupId = toId(req.body.groupId)
+  console.log(req.body)
+  await groupModel.findByIdAndUpdate(groupId, { $pull: { expenses: {_id: req.body.expense._id } }}).exec()
   //await groupModel.findByIdAndUpdate(groupId, { $push: { groupTags: groupTags } }).exec()
   await updatePendingTransactions(groupId)
   return res.sendStatus(200)
