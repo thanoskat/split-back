@@ -301,7 +301,8 @@ router.get("/", verifyAccessToken, async (req, res) => {
 
 // Get group by id
 router.post("/getgroup", verifyAccessToken, async (req, res) => {
-  groupId = req.body.groupid
+  //const groupid = req.body.groupid
+  console.log("get group")
   const group = await groupModel.findById(req.body.groupid)
   .populate({ path: "pendingTransactions", populate: {path: "sender receiver", model: "Users" }})
   .populate({ path: "members", model:"Users"})
