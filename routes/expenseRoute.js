@@ -170,7 +170,7 @@ router.post('/addexpense', verifyAccessToken, async (req, res) => {
 
 router.post('/delete', verifyAccessToken, async (req, res) => {
   const groupId = toId(req.body.groupId)
-  console.log(req.body)
+  // console.log(req.body)
   await groupModel.findByIdAndUpdate(groupId, { $pull: { expenses: {_id: req.body.expense._id } }}).exec()
   //await groupModel.findByIdAndUpdate(groupId, { $push: { groupTags: groupTags } }).exec()
   await updatePendingTransactions(groupId)
