@@ -31,7 +31,7 @@ const userSchema = new mongoose.Schema({
   // },
   date: {
     type: Date,
-    default: Date.now()
+    default: Date.now
   },
 
   groups :[{type:mongoose.Types.ObjectId, ref: 'Group' }],
