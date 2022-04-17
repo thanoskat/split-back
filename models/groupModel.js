@@ -36,9 +36,10 @@ const groupSchema = mongoose.Schema({
       required: false
     }],
     expenseTags: [{
-      name: String,
-      color: String,
-      required: false
+      type: mongoose.Types.ObjectId,
+      // name: String,
+      // color: String,
+      // required: false
     }],
     createdAt: {
       type: Date,
@@ -113,6 +114,6 @@ const groupSchema = mongoose.Schema({
 //https://stackoverflow.com/questions/20009122/removing-many-to-many-reference-in-mongoose
 
 const Group = mongoose.model("Group", groupSchema);
+// const GroupTags = mongoose.model("GroupTags", groupSchema.groupTags)
 
 module.exports = Group;
-
