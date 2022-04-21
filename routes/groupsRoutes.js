@@ -17,6 +17,16 @@ const updatePendingTransactions = async (groupId) => {
   await groupModel.findByIdAndUpdate(groupId, { $set: { pendingTransactions: result.pendingTransactions, totalSpent: result.totalSpent } }, { upsert: true }).exec()
 }
 
+router.post('/label/edit', verifyAccessToken, async (req, res) => {
+  await groupModel.updateOne({'groupTags._id': toId(req.body.id)}, { $set: { 'groupTags.$.name': req.body.text } }).exec()
+  const group = await groupModel.findById(req.body.groupid)
+  .populate({ path: "pendingTransactions", populate: {path: "sender receiver", model: "Users" }})
+  .populate({ path: "members", model: "Users"})
+  .populate({ path: "expenses", populate: {path: "sender", model: "Users" }})
+  .populate({ path: "transfers", populate: {path: "sender receiver", model: "Users" }}).exec()
+  res.send(group)
+})
+
 //CREATE GROUP WITH USER'S ID. DON'T HAVE TO WORRY ABOUT MULTIPLE GROUPS
 //creators are automatically members of group they create
 router.post("/creategroup", verifyAccessToken, async (req, res) => {
@@ -295,13 +305,11 @@ router.get("/", verifyAccessToken, async (req, res) => {
   .populate({ path: "members", model: "Users"})
   .populate({ path: "expenses", populate: {path: "sender", model: "Users" }})
   .populate({ path: "transfers", populate: {path: "sender receiver", model: "Users" }})
-  //console.log("ran",group)
   res.send(group)
 })
 
 // Get group by id
 router.post("/getgroup", verifyAccessToken, async (req, res) => {
-  //const groupid = req.body.groupid
   const group = await groupModel.findById(req.body.groupid)
   .populate({ path: "pendingTransactions", populate: {path: "sender receiver", model: "Users" }})
   .populate({ path: "members", model: "Users"})

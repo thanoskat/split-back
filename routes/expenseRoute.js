@@ -65,6 +65,27 @@ router.post('/addexpense1', verifyAccessToken, async (req, res) => {
   }
 })
 
+router.post('/add', verifyAccessToken, async (req, res) => {
+  const groupId = toId(req.body.groupId)
+  const newExpense = {
+    sender: req.body.sender,
+    amount: req.body.amount,
+    description: req.body.description,
+    tobeSharedWith: req.body.tobeSharedWith,
+    expenseTags: req.body.expenseTags
+  }
+  await groupModel.findByIdAndUpdate(groupId, { $push: { expenses: newExpense } }).exec()
+  return res.send(await updatePendingTransactions(groupId))
+})
+
+router.post('/remove', verifyAccessToken, async (req, res) => {
+  const groupId = toId(req.body.groupId)
+  // console.log(req.body)
+  await groupModel.findByIdAndUpdate(groupId, { $pull: { expenses: {_id: toId(req.body.expenseId) } }}).exec()
+  //await groupModel.findByIdAndUpdate(groupId, { $push: { groupTags: groupTags } }).exec()
+  return res.send(await updatePendingTransactions(groupId))
+})
+
 router.post('/addexpense2', verifyAccessToken, async (req, res) => {
   const groupID = toId(req.body.groupID);
   const amount = req.body.amount;
