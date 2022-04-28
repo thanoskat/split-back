@@ -171,14 +171,14 @@ router.post('/addtag', verifyAccessToken, async (req, res) => {
 router.post('/deletetag', verifyAccessToken, async (req, res) => {
   const groupId = toId(req.body.groupId)
   const groupTag = req.body.groupTag
-  const group = await groupModel.findByIdAndUpdate(groupId, { $pull: { groupTags: groupTag } }, { returnDocument: "after" })
+  const group = await groupModel
+    .findByIdAndUpdate(groupId, { $pull: { groupTags: groupTag } }, { returnDocument: "after" })
     .populate({ path: "pendingTransactions", populate: { path: "sender receiver", model: "Users" } })
     .populate({ path: "members", model: "Users" })
     .populate({ path: "expenses", populate: { path: "sender", model: "Users" } })
     .populate({ path: "transfers", populate: { path: "sender receiver", model: "Users" } }).exec()
 
   return res.send(group)
-
 })
 
 router.post('/addexpense', verifyAccessToken, async (req, res) => {
