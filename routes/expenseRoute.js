@@ -205,8 +205,8 @@ router.post('/addtransfer', verifyAccessToken, async (req, res) => {
   }
 
   await groupModel.findByIdAndUpdate(groupId, { $push: { transfers: newTransfer } }).exec()
-  await updatePendingTransactions(groupId)
-  return res.sendStatus(200)
+  const group =await updatePendingTransactions(groupId)
+  return res.send(group)
 })
 
 
