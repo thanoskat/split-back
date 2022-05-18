@@ -24,7 +24,7 @@ const testRoute = require('./routes/testRoute')
 app.use(cors({
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   credentials: true,
-  origin: 'http://localhost:3000'
+  origin: config.FRONT_URL
 }))
 app.use(express.json())
 app.use('/auth', authRoute)

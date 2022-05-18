@@ -48,7 +48,7 @@ router.get('/v/:token', async (req, res) => {
     const accessToken = generateAccessToken(decoded.userId)
 
     // Put refresh token in cookie
-    res.setHeader('Set-Cookie', cookie.serialize('refreshToken', refreshToken, { sameSite: 'none', secure: true, httpOnly: true, path: '/auth/refreshtoken' }))
+    res.setHeader('Set-Cookie', cookie.serialize('refreshToken', refreshToken, { sameSite: 'none', secure: false, httpOnly: true, path: '/auth/refreshtoken' }))
 
     // Respond with session data and the first access token
     res.send({
@@ -111,7 +111,7 @@ router.get('/refreshtoken', async (req, res) => { //generates new access token
     // Sending a response with a new access token.
     const newRefreshToken = generateRefreshToken()
     await sessionModel.findByIdAndUpdate(sessionFound.toObject()._id, { refreshToken: newRefreshToken, previousRefreshToken: refreshToken }).exec()
-    res.setHeader('Set-Cookie', cookie.serialize('refreshToken', newRefreshToken, { sameSite: 'none', secure: true, httpOnly: true, path: '/auth/refreshtoken' }))
+    res.setHeader('Set-Cookie', cookie.serialize('refreshToken', newRefreshToken, { sameSite: 'none', secure: false, httpOnly: true, path: '/auth/refreshtoken' }))
     const newAccessToken = generateAccessToken(sessionFound.userId) //generates new access token
     console.log(`\nNew refresh token ${newRefreshToken.slice(newRefreshToken.length - 10)}. New access token ${newAccessToken.slice(newAccessToken.length - 10)}.`)
     // setTimeout(() => res.send({ newAccessToken: newAccessToken }), 5000)
@@ -130,7 +130,7 @@ router.post('/signout', verifyAccessToken, async (req, res) => {
     // TODO check if userid is correct
     await sessionModel.findByIdAndUpdate(mongoose.Types.ObjectId(req.body.sessionID), { revoked: true }).exec()
     console.log("/auth/signout session revoked")
-    res.setHeader('Set-Cookie', cookie.serialize('refreshToken', ' ', { sameSite: 'none', secure: true, httpOnly: true, path: '/auth/refreshtoken' }))
+    res.setHeader('Set-Cookie', cookie.serialize('refreshToken', ' ', { sameSite: 'none', secure: false, httpOnly: true, path: '/auth/refreshtoken' }))
     res.send("Signed out")
   }
   catch(error) {
