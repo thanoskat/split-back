@@ -27,13 +27,13 @@ router.post('/signup', async (req, res) => {
 
 router.get('/v/:token', async (req, res) => {
   try {
-    // Extract user id from magic link
+    // Extract user ID from magic link
     const decoded = jwt.verify(req.params.token, config.MAGICLINK_SECRET)
 
-    // Generate the long refresh token
+    // Generate a refresh token
     const refreshToken = generateRefreshToken()
 
-    // Create new session
+    // Create a session and save to DB
     const session = new sessionModel({
       refreshToken: refreshToken,
       userId: decoded.userId,
@@ -91,6 +91,40 @@ router.get('/refreshtoken', async (req, res) => { //generates new access token
     console.log("Old refresh token", refreshToken.slice(refreshToken.length - 10))
 
     // Checking if session exists in db.
+    const sessionFound = await sessionModel.findOne({ refreshToken: refreshToken }).exec()
+    if(!sessionFound) return res.status(401).send("Session not found.")
+
+    // Checking if session is expired.
+    const expInSeconds = (sessionFound.toObject().createdAt.getTime() + process.env.SESSION_TTL_IN_SECONDS * 1000 - Date.now())/1000
+    console.log(expInSeconds > 0 ? `Session expires in ${Math.trunc(expInSeconds)} seconds` : `Session expired ${Math.trunc(expInSeconds*-1)} seconds ago`)
+    if((sessionFound.toObject().createdAt.getTime() + process.env.SESSION_TTL_IN_SECONDS * 1000) < Date.now()) {
+      await sessionModel.findByIdAndDelete(sessionFound.toObject()._id).exec()
+      return res.status(401).send("Session is expired.")
+    }
+
+    // Sending a response with a new access token.
+    res.setHeader('Set-Cookie', cookie.serialize('refreshToken', refreshToken, { httpOnly: true, path: '/auth/refreshtoken' }))
+    const newAccessToken = generateAccessToken(sessionFound.userId) //generates new access token
+    console.log(`\nNew access token ${newAccessToken.slice(newAccessToken.length - 10)}.`)
+    // setTimeout(() => res.send({ newAccessToken: newAccessToken }), 5000)
+    // return 200
+    return res.send({ newAccessToken: newAccessToken })
+  }
+  catch(error) {
+    // Sending 500 internal error for any other error catched.
+    console.log(error.message)
+    return res.sendStatus(500)
+  }
+})
+
+router.get('/refreshtoken_with_rotation', async (req, res) => { //generates new access token
+  try {
+    // Getting refresh token from httponly cookie.
+    const refreshToken = cookie.parse(req.headers.cookie).refreshToken
+    if(!refreshToken) return res.status(400).send("Refresh cookie not found.")
+    console.log("Old refresh token", refreshToken.slice(refreshToken.length - 10))
+
+    // Checking if session exists in db.
     const sessionFound = await sessionModel.findOne({$or: [{ refreshToken: refreshToken}, {previousRefreshToken: refreshToken}]}).exec()
     if(!sessionFound) return res.status(401).send("Session not found.")
 
@@ -128,8 +162,9 @@ router.get('/refreshtoken', async (req, res) => { //generates new access token
 router.post('/signout', verifyAccessToken, async (req, res) => {
   try {
     // TODO check if userid is correct
-    await sessionModel.findByIdAndUpdate(mongoose.Types.ObjectId(req.body.sessionID), { revoked: true }).exec()
-    console.log("/auth/signout session revoked")
+    // Revoke token instead of deleting
+    // await sessionModel.findByIdAndUpdate(mongoose.Types.ObjectId(req.body.sessionID), { revoked: true }).exec()
+    await sessionModel.findByIdAndDelete(mongoose.Types.ObjectId(req.body.sessionID)).exec()
     res.setHeader('Set-Cookie', cookie.serialize('refreshToken', ' ', { httpOnly: true, path: '/auth/refreshtoken' }))
     res.send("Signed out")
   }
