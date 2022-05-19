@@ -9,18 +9,18 @@ const sessionSchema = mongoose.Schema({
     type: String,
     required: true
   },
-  previousRefreshToken: {
-    type: String,
-    default: null
-  },
-  revoked: {
-    type: Boolean,
-    default: false
-  },
+  // DONT DELETE
+  // previousRefreshToken: {
+  //   type: String,
+  //   default: null
+  // },
+  // revoked: {
+  //   type: Boolean,
+  //   default: false
+  // },
   // timestamps: true,
   createdAt: {
     type: Date,
-    // expires: 1200,
     required: true
   }
 })
