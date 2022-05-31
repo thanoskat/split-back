@@ -3,7 +3,6 @@ const app = express()
 const mongoose = require('mongoose')
 const config = require('dotenv').config().parsed
 const cors = require('cors')
-// comment added
 
 //Connect To DB
 mongoose.connect(
@@ -14,11 +13,10 @@ mongoose.connect(
 const authRoute = require('./routes/authRoute')
 const getUsersRoute = require('./routes/getUsersRoute')
 const groupsRoutes = require('./routes/groupsRoutes')
+const invitationRoutes = require('./routes/invitationRoute')
 const userInfoRoute = require('./routes/userInfoRoute')
 const expenseRoute = require('./routes/expenseRoute')
 const testRoute = require('./routes/testRoute')
-
-// acomment
 
 //Middleware
 app.use(cors({
@@ -31,6 +29,7 @@ app.use('/auth', authRoute)
 app.use('/getusers', getUsersRoute)
 app.use('/userinfo', userInfoRoute)
 app.use('/groups', groupsRoutes)
+app.use('/invitation', invitationRoutes)
 app.use('/expense', expenseRoute)
 app.use('/test', testRoute)
 
@@ -39,6 +38,4 @@ app.get('/', (req, res) => {
   res.send('We are on home')
 })
 
-
-//Listening
 app.listen(4000, () => console.log('Server running'))
