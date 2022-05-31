@@ -1,5 +1,5 @@
-const express = require("express");
-const router = express.Router();
+const express = require("express")
+const router = express.Router()
 const groupModel = require("../models/groupModel")
 const userModel = require('../models/userModel')
 const requestsModel = require("../models/requestsModel")
@@ -330,7 +330,7 @@ router.get("/", verifyAccessToken, async (req, res) => {
   .populate({ path: "members", model: "Users"})
   .populate({ path: "expenses", populate: {path: "sender", model: "Users" }})
   .populate({ path: "transfers", populate: {path: "sender receiver", model: "Users" }})
-  
+
   res.send(group)
 })
 
