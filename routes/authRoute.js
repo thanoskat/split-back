@@ -48,7 +48,19 @@ router.get('/v/:token', async (req, res) => {
     const accessToken = generateAccessToken(decoded.userId)
 
     // Put refresh token in cookie
-    res.setHeader('Set-Cookie', cookie.serialize('refreshToken', refreshToken, { httpOnly: true, path: '/auth/refreshtoken' }))
+    res.setHeader('Set-Cookie', cookie.serialize(
+      'refreshToken',
+      refreshToken,
+      {
+        sameSite: 'Lax',
+        httpOnly: true,
+        path: '/auth/refreshtoken',
+        expires: new Date(Date.now() + (30*24*3600000)),
+        maxAge: 10 * 24 * 60 * 60 * 1000
+      }
+    ))
+
+    console.log(res.header)
 
     // Respond with session data and the first access token
     res.send({
@@ -102,8 +114,19 @@ router.get('/refreshtoken', async (req, res) => { //generates new access token
       return res.status(401).send("Session is expired.")
     }
 
+    res.setHeader('Set-Cookie', cookie.serialize(
+      'refreshToken',
+      refreshToken,
+      {
+        sameSite: 'Lax',
+        httpOnly: true,
+        path: '/auth/refreshtoken',
+        expires: new Date(Date.now() + (30*24*3600000)),
+        maxAge: 10 * 24 * 60 * 60 * 1000
+      }
+    ))
+
     // Sending a response with a new access token.
-    res.setHeader('Set-Cookie', cookie.serialize('refreshToken', refreshToken, { httpOnly: true, path: '/auth/refreshtoken' }))
     const newAccessToken = generateAccessToken(sessionFound.userId) //generates new access token
     console.log(`\nNew access token ${newAccessToken.slice(newAccessToken.length - 10)}.`)
     // setTimeout(() => res.send({ newAccessToken: newAccessToken }), 5000)
@@ -142,10 +165,22 @@ router.get('/refreshtoken_with_rotation', async (req, res) => { //generates new 
       return res.status(401).send("Session is expired.")
     }
 
-    // Sending a response with a new access token.
     const newRefreshToken = generateRefreshToken()
     await sessionModel.findByIdAndUpdate(sessionFound.toObject()._id, { refreshToken: newRefreshToken, previousRefreshToken: refreshToken }).exec()
-    res.setHeader('Set-Cookie', cookie.serialize('refreshToken', newRefreshToken, { httpOnly: true, path: '/auth/refreshtoken' }))
+
+    // Sending a response with a new access token.
+    res.setHeader('Set-Cookie', cookie.serialize(
+      'refreshToken',
+      refreshToken,
+      {
+        sameSite: 'Lax',
+        httpOnly: true,
+        path: '/auth/refreshtoken',
+        expires: new Date(Date.now() + (30*24*3600000)),
+        maxAge: 10 * 24 * 60 * 60 * 1000
+      }
+    ))
+
     const newAccessToken = generateAccessToken(sessionFound.userId) //generates new access token
     console.log(`\nNew refresh token ${newRefreshToken.slice(newRefreshToken.length - 10)}. New access token ${newAccessToken.slice(newAccessToken.length - 10)}.`)
     // setTimeout(() => res.send({ newAccessToken: newAccessToken }), 5000)
@@ -165,7 +200,19 @@ router.post('/signout', verifyAccessToken, async (req, res) => {
     // Revoke token instead of deleting
     // await sessionModel.findByIdAndUpdate(mongoose.Types.ObjectId(req.body.sessionID), { revoked: true }).exec()
     await sessionModel.findByIdAndDelete(mongoose.Types.ObjectId(req.body.sessionID)).exec()
-    res.setHeader('Set-Cookie', cookie.serialize('refreshToken', ' ', { httpOnly: true, path: '/auth/refreshtoken' }))
+
+    res.setHeader('Set-Cookie', cookie.serialize(
+      'refreshToken',
+      refreshToken,
+      {
+        sameSite: 'Lax',
+        httpOnly: true,
+        path: '/auth/refreshtoken',
+        expires: new Date(Date.now() + (30*24*3600000)),
+        maxAge: 10 * 24 * 60 * 60 * 1000
+      }
+    ))
+
     res.send("Signed out")
   }
   catch(error) {
