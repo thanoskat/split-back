@@ -11,20 +11,46 @@ const generateAccessToken = require('../utility/generateAccessToken')
 const cookie = require('cookie')
 
 router.post('/signup', async (req, res) => {
+
+  const emailCount = await userModel.countDocuments({ email: req.body.email })
+  if (emailCount) {
+    return  res.status(400).json({ message: "This email already exists" })
+  }
+
   try {
     const user = new userModel({
       nickname: req.body.nickname,
       email: req.body.email
     })
     const savedUser = await user.save()
-    res.send(savedUser)
+    const magicLink = generateMagicLink(savedUser._id.toString())
+    console.log(magicLink)
+    res.send({
+      link: magicLink,
+      message: `An email containing a link has been sent to : ${req.body.email}`
+    })
   }
-  catch(error) {
+  catch (error) {
     console.log(error.message)
     res.send(error.message)
   }
 })
 
+router.post('/sendlink', async (req, res) => {
+  try {
+    const userFound = await userModel.findOne({ email: req.body.email }).exec()
+    const magicLink = generateMagicLink(userFound._id.toString())
+    console.log(magicLink)
+    res.send({
+      link: magicLink,
+      message: `An email containing a link has been sent to : ${req.body.email}`
+    })
+  }
+  catch (error) {
+    console.log(error.message)
+    res.send(error.message)
+  }
+})
 router.get('/v/:token', async (req, res) => {
   try {
     // Extract user ID from magic link
@@ -61,43 +87,29 @@ router.get('/v/:token', async (req, res) => {
       }
     })
   }
-  catch(error) {
+  catch (error) {
     console.log(error.message)
     res.send(error.message)
   }
 })
 
-router.post('/sendlink', async (req, res) => {
-  try {
-    const userFound = await userModel.findOne({ email: req.body.email }).exec()
-    const magicLink = generateMagicLink(userFound._id.toString())
-    console.log(magicLink)
-    res.send({
-        link: magicLink,
-        message: `An email containing a link has been sent to : ${req.body.email}`
-      })
-  }
-  catch(error) {
-    console.log(error.message)
-    res.send(error.message)
-  }
-})
+
 
 router.get('/refreshtoken', async (req, res) => { //generates new access token
   try {
     // Getting refresh token from httponly cookie.
     const refreshToken = cookie.parse(req.headers.cookie).refreshToken
-    if(!refreshToken) return res.status(400).send("Refresh cookie not found.")
+    if (!refreshToken) return res.status(400).send("Refresh cookie not found.")
     console.log("Old refresh token", refreshToken.slice(refreshToken.length - 10))
 
     // Checking if session exists in db.
     const sessionFound = await sessionModel.findOne({ refreshToken: refreshToken }).exec()
-    if(!sessionFound) return res.status(401).send("Session not found.")
+    if (!sessionFound) return res.status(401).send("Session not found.")
 
     // Checking if session is expired.
-    const expInSeconds = (sessionFound.toObject().createdAt.getTime() + process.env.SESSION_TTL_IN_SECONDS * 1000 - Date.now())/1000
-    console.log(expInSeconds > 0 ? `Session expires in ${Math.trunc(expInSeconds)} seconds` : `Session expired ${Math.trunc(expInSeconds*-1)} seconds ago`)
-    if((sessionFound.toObject().createdAt.getTime() + process.env.SESSION_TTL_IN_SECONDS * 1000) < Date.now()) {
+    const expInSeconds = (sessionFound.toObject().createdAt.getTime() + process.env.SESSION_TTL_IN_SECONDS * 1000 - Date.now()) / 1000
+    console.log(expInSeconds > 0 ? `Session expires in ${Math.trunc(expInSeconds)} seconds` : `Session expired ${Math.trunc(expInSeconds * -1)} seconds ago`)
+    if ((sessionFound.toObject().createdAt.getTime() + process.env.SESSION_TTL_IN_SECONDS * 1000) < Date.now()) {
       await sessionModel.findByIdAndDelete(sessionFound.toObject()._id).exec()
       return res.status(401).send("Session is expired.")
     }
@@ -110,7 +122,7 @@ router.get('/refreshtoken', async (req, res) => { //generates new access token
     // return 200
     return res.send({ newAccessToken: newAccessToken })
   }
-  catch(error) {
+  catch (error) {
     // Sending 500 internal error for any other error catched.
     console.log(error.message)
     return res.sendStatus(500)
@@ -121,23 +133,23 @@ router.get('/refreshtoken_with_rotation', async (req, res) => { //generates new 
   try {
     // Getting refresh token from httponly cookie.
     const refreshToken = cookie.parse(req.headers.cookie).refreshToken
-    if(!refreshToken) return res.status(400).send("Refresh cookie not found.")
+    if (!refreshToken) return res.status(400).send("Refresh cookie not found.")
     console.log("Old refresh token", refreshToken.slice(refreshToken.length - 10))
 
     // Checking if session exists in db.
-    const sessionFound = await sessionModel.findOne({$or: [{ refreshToken: refreshToken}, {previousRefreshToken: refreshToken}]}).exec()
-    if(!sessionFound) return res.status(401).send("Session not found.")
+    const sessionFound = await sessionModel.findOne({ $or: [{ refreshToken: refreshToken }, { previousRefreshToken: refreshToken }] }).exec()
+    if (!sessionFound) return res.status(401).send("Session not found.")
 
     // Checking if refresh token has been used before. 419
-    if(sessionFound.toObject().previousRefreshToken == refreshToken) return res.status(401).send("Refresh token has been used before.")
+    if (sessionFound.toObject().previousRefreshToken == refreshToken) return res.status(401).send("Refresh token has been used before.")
 
     // Checking if refresh token has been revoked.
-    if(sessionFound.toObject().revoked == true) return res.status(401).send("Refresh token has been revoked.")
+    if (sessionFound.toObject().revoked == true) return res.status(401).send("Refresh token has been revoked.")
 
     // Checking if session is expired.
-    const expInSeconds = (sessionFound.toObject().createdAt.getTime() + 1440 * 60 * 1000 - Date.now())/1000
-    console.log(expInSeconds > 0 ? `Session expires in ${Math.trunc(expInSeconds)} seconds` : `Session expired ${Math.trunc(expInSeconds*-1)} seconds ago`)
-    if((sessionFound.toObject().createdAt.getTime() + 1440 * 60 * 1000) < Date.now()) {
+    const expInSeconds = (sessionFound.toObject().createdAt.getTime() + 1440 * 60 * 1000 - Date.now()) / 1000
+    console.log(expInSeconds > 0 ? `Session expires in ${Math.trunc(expInSeconds)} seconds` : `Session expired ${Math.trunc(expInSeconds * -1)} seconds ago`)
+    if ((sessionFound.toObject().createdAt.getTime() + 1440 * 60 * 1000) < Date.now()) {
       await sessionModel.findByIdAndUpdate(sessionFound.toObject()._id, { revoked: true }).exec()
       return res.status(401).send("Session is expired.")
     }
@@ -152,7 +164,7 @@ router.get('/refreshtoken_with_rotation', async (req, res) => { //generates new 
     // return 200
     return res.send({ newAccessToken: newAccessToken })
   }
-  catch(error) {
+  catch (error) {
     // Sending 500 internal error for any other error catched.
     console.log(error.message)
     return res.sendStatus(500)
@@ -168,7 +180,7 @@ router.post('/signout', verifyAccessToken, async (req, res) => {
     res.setHeader('Set-Cookie', cookie.serialize('refreshToken', ' ', { httpOnly: true, path: '/auth/refreshtoken' }))
     res.send("Signed out")
   }
-  catch(error) {
+  catch (error) {
     console.log(error.message)
     res.send("Error while signing out")
   }
@@ -180,7 +192,7 @@ router.get('/clearsessions', async (req, res) => {
     console.log("Session collection cleared.")
     res.sendStatus(200)
   }
-  catch(error) {
+  catch (error) {
     res.send(error)
   }
 })
@@ -191,7 +203,7 @@ router.get('/clearusers', async (req, res) => {
     console.log("User collection cleared.")
     res.sendStatus(200)
   }
-  catch(error) {
+  catch (error) {
     res.send(error)
   }
 })
@@ -204,7 +216,7 @@ router.get('/getuserinfo', verifyAccessToken, async (req, res) => {
       id: user._id
     })
   }
-  catch(error) {
+  catch (error) {
     console.log(error.message)
   }
 })

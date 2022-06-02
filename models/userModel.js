@@ -2,10 +2,10 @@ const { isEmail } = require('validator')
 const mongoose = require('mongoose')
 
 
-const emailUnique = async (email) => {
-  const emailCount = await mongoose.models.Users.countDocuments({ email: email })
-  return !emailCount
-}
+// const emailUnique = async (email) => {
+//   const emailCount = await mongoose.models.Users.countDocuments({ email: email })
+//   return !emailCount
+// }
 
 const userSchema = new mongoose.Schema({
   nickname: {
@@ -19,7 +19,7 @@ const userSchema = new mongoose.Schema({
     maxLength: 255,
     validate: [
 
-      { validator: emailUnique, message: "{VALUE} already exists" },
+      // { validator: emailUnique, message: "{VALUE} already exists" },
       { validator: isEmail, message: "{VALUE} is not valid" }
     ]
   },
