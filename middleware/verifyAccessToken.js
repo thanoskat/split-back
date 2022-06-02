@@ -1,7 +1,6 @@
 const router = require('express').Router()
 const jwt = require('jsonwebtoken')
 const config = process.env
-const cookie = require('cookie')
 
 const verifyAccessToken = (req, res, next) =>{
   if (!req.headers['authorization']) return res.sendStatus(401)
