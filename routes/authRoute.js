@@ -51,6 +51,7 @@ router.post('/sendlink', async (req, res) => {
     res.send(error.message)
   }
 })
+
 router.get('/v/:token', async (req, res) => {
   try {
     // Extract user ID from magic link
