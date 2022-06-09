@@ -18,12 +18,12 @@ const updatePendingTransactions = async (groupId) => {
 }
 
 router.post('/label/edit', verifyAccessToken, async (req, res) => {
-  await groupModel.updateOne({'groupTags._id': toId(req.body.id)}, { $set: { 'groupTags.$.name': req.body.text } }).exec()
+  await groupModel.updateOne({ 'groupTags._id': toId(req.body.id) }, { $set: { 'groupTags.$.name': req.body.text } }).exec()
   const group = await groupModel.findById(req.body.groupid)
-  .populate({ path: "pendingTransactions", populate: {path: "sender receiver", model: "Users" }})
-  .populate({ path: "members", model: "Users"})
-  .populate({ path: "expenses", populate: {path: "sender", model: "Users" }})
-  .populate({ path: "transfers", populate: {path: "sender receiver", model: "Users" }}).exec()
+    .populate({ path: "pendingTransactions", populate: { path: "sender receiver", model: "Users" } })
+    .populate({ path: "members", model: "Users" })
+    .populate({ path: "expenses", populate: { path: "sender", model: "Users" } })
+    .populate({ path: "transfers", populate: { path: "sender receiver", model: "Users" } }).exec()
   res.send(group)
 })
 
@@ -33,14 +33,14 @@ router.post('/label/remove', verifyAccessToken, async (req, res) => {
   const labelId = req.body.labelId
   try {
     const group = await groupModel
-      .findByIdAndUpdate(groupId, { $pull: { groupTags: { _id: labelId }}}, { returnDocument: "after" })
+      .findByIdAndUpdate(groupId, { $pull: { groupTags: { _id: labelId } } }, { returnDocument: "after" })
       .populate({ path: "pendingTransactions", populate: { path: "sender receiver", model: "Users" } })
       .populate({ path: "members", model: "Users" })
       .populate({ path: "expenses", populate: { path: "sender", model: "Users" } })
       .populate({ path: "transfers", populate: { path: "sender receiver", model: "Users" } }).exec()
     return res.send(group)
   }
-  catch(error) {
+  catch (error) {
     console.log(error)
   }
 })
@@ -52,7 +52,8 @@ router.post("/creategroup", verifyAccessToken, async (req, res) => {
     const creatorID = toId(jwt.verify(req.accessToken, config.ACCESS_TOKEN_SECRET).userId)
     const group = new groupModel({
       creator: creatorID,
-      title: req.body.title
+      title: req.body.title,
+      groupTags: req.body.groupTags
     })
     const savedGroup = await group.save();
     await addUserToGroup(group._id, creatorID) //creators are automatically members of group they create
@@ -63,6 +64,8 @@ router.post("/creategroup", verifyAccessToken, async (req, res) => {
     res.json({ message: error })
   }
 })
+
+
 
 //CREATES NEW GROUP REQUEST
 router.post("/creategrouprequest", verifyAccessToken, async (req, res) => {
@@ -196,11 +199,11 @@ router.get('/getgrouprequests', verifyAccessToken, async (req, res) => {
   const dateFormatRequests = requests.map(item => {
     const container = {}
     container["_id"] = item._id,
-    container["requester"] = item.requester,
-    container["recipient"] = item.recipient
+      container["requester"] = item.requester,
+      container["recipient"] = item.recipient
     container["status"] = item.status,
-    container["groupToJoin"] = item.groupToJoin,
-    container["date"] = getTimeSince(new Date(item.date).getTime())
+      container["groupToJoin"] = item.groupToJoin,
+      container["date"] = getTimeSince(new Date(item.date).getTime())
     return container;
   })
   // console.log(dateFormatRequests)
@@ -308,28 +311,28 @@ router.get("/groupsbycreator", verifyAccessToken, async (req, res) => {
 
 router.get("/mygroups", verifyAccessToken, async (req, res) => {
   const userID = toId(jwt.verify(req.accessToken, config.ACCESS_TOKEN_SECRET).userId)
-  const groups = await userModel.findById(userID).populate({path:'groups',populate:{path:'pendingTransactions',populate:{path:"sender receiver", model: "Users"}}})
-  .populate({path:'groups',populate:{path:'members',model:'Users'}})
-  .populate({path:'groups',populate:{path:'expenses', populate: {path: "sender", model: "Users" }}})
-  .populate({path:'groups',populate:{path:'transfers',populate: {path: "sender receiver", model: "Users" }}}).exec()
+  const groups = await userModel.findById(userID).populate({ path: 'groups', populate: { path: 'pendingTransactions', populate: { path: "sender receiver", model: "Users" } } })
+    .populate({ path: 'groups', populate: { path: 'members', model: 'Users' } })
+    .populate({ path: 'groups', populate: { path: 'expenses', populate: { path: "sender", model: "Users" } } })
+    .populate({ path: 'groups', populate: { path: 'transfers', populate: { path: "sender receiver", model: "Users" } } }).exec()
   return res.send(groups.groups)
 })
 
 
 router.get("/:groupId", verifyAccessToken, async (req, res) => {
-  const group = await groupModel.findById(req.params.groupId).populate({ path: "pendingTransactions", populate: {path: "sender receiver", model: "Users" }})
-  .populate({ path: "members", model:"Users"})
-  .populate({ path: "transactions", populate: {path: "sender receiver", model: "Users" }})
+  const group = await groupModel.findById(req.params.groupId).populate({ path: "pendingTransactions", populate: { path: "sender receiver", model: "Users" } })
+    .populate({ path: "members", model: "Users" })
+    .populate({ path: "transactions", populate: { path: "sender receiver", model: "Users" } })
   res.send(group)
 })
 
 //GET WHOLE GROUP
 router.get("/", verifyAccessToken, async (req, res) => {
   const group = await groupModel.find()
-  .populate({ path: "pendingTransactions", populate: {path: "sender receiver", model: "Users" }})
-  .populate({ path: "members", model: "Users"})
-  .populate({ path: "expenses", populate: {path: "sender", model: "Users" }})
-  .populate({ path: "transfers", populate: {path: "sender receiver", model: "Users" }})
+    .populate({ path: "pendingTransactions", populate: { path: "sender receiver", model: "Users" } })
+    .populate({ path: "members", model: "Users" })
+    .populate({ path: "expenses", populate: { path: "sender", model: "Users" } })
+    .populate({ path: "transfers", populate: { path: "sender receiver", model: "Users" } })
 
   res.send(group)
 })
@@ -337,10 +340,10 @@ router.get("/", verifyAccessToken, async (req, res) => {
 // Get group by id
 router.post("/getgroup", verifyAccessToken, async (req, res) => {
   const group = await groupModel.findById(req.body.groupid)
-  .populate({ path: "pendingTransactions", populate: {path: "sender receiver", model: "Users" }})
-  .populate({ path: "members", model: "Users"})
-  .populate({ path: "expenses", populate: {path: "sender", model: "Users" }})
-  .populate({ path: "transfers", populate: {path: "sender receiver", model: "Users" }}).exec()
+    .populate({ path: "pendingTransactions", populate: { path: "sender receiver", model: "Users" } })
+    .populate({ path: "members", model: "Users" })
+    .populate({ path: "expenses", populate: { path: "sender", model: "Users" } })
+    .populate({ path: "transfers", populate: { path: "sender receiver", model: "Users" } }).exec()
   res.send(group)
 })
 
