@@ -2,7 +2,6 @@ const express = require("express")
 const router = express.Router()
 const groupModel = require("../models/groupModel")
 const userModel = require('../models/userModel')
-const requestsModel = require("../models/requestsModel")
 const mongoose = require("mongoose");
 const toId = mongoose.Types.ObjectId; //builds object from string ID
 const verifyAccessToken = require('../middleware/verifyAccessToken')
