@@ -2,7 +2,6 @@ const express = require("express")
 const router = express.Router()
 const groupModel = require("../models/groupModel")
 const userModel = require('../models/userModel')
-const requestsModel = require("../models/requestsModel")
 const mongoose = require("mongoose");
 const toId = mongoose.Types.ObjectId; //builds object from string ID
 const verifyAccessToken = require('../middleware/verifyAccessToken')
@@ -336,11 +335,12 @@ router.get("/", verifyAccessToken, async (req, res) => {
 
 // Get group by id
 router.post("/getgroup", verifyAccessToken, async (req, res) => {
-  const group = await groupModel.findById(req.body.groupid)
+  const group = await groupModel.findById(toId(req.body.groupid))
   .populate({ path: "pendingTransactions", populate: {path: "sender receiver", model: "Users" }})
   .populate({ path: "members", model: "Users"})
   .populate({ path: "expenses", populate: {path: "sender", model: "Users" }})
   .populate({ path: "transfers", populate: {path: "sender receiver", model: "Users" }}).exec()
+  // console.log(group)
   res.send(group)
 })
 
