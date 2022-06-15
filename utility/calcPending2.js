@@ -1,6 +1,6 @@
 const currency = require("currency.js");
 
-const calcPending2 = (expenses,transfers, members) => {
+const calcPending2 = (expenses, transfers, members) => {
 
   // Initialize spenders array with 0 balances and 0 for the personalized array of money to equilibrium
   const spenders = []
@@ -18,70 +18,73 @@ const calcPending2 = (expenses,transfers, members) => {
 
   // Loop through expenses
   expenses.map(expense => {
-    
-      totalSpent = totalSpent.add(expense.amount)
 
+    totalSpent = totalSpent.add(expense.amount)
+
+    if (expense.splitEqually) {
       //divide expense over the number of people who will share 
       const distributedAmountArray = currency(expense.amount)
-      .distribute(expense.tobeSharedWith.length) //for unequal split, we would have to make changes here. Personalized array will be taking the splitAmount rather than the distributed amount
-      //for every tx and every spender, update their personalized array of money to equilibrium
-     
-      //[{ id: member._id, splitAmount: "" },
-      //{ id: member._id, splitAmount: "" },
-      //{ id: member._id, splitAmount: "" }]
-      // expense.tobeSharedWith.map((shareObject) => {
-      //   spenders.map(spender => {
-      //     if (spender.id.toString() === shareObject.id.toString()) {          
-      //      spender.moneySummedAndDistributed=currency(spender.moneySummedAndDistributed)
-      //      .add(shareObject.splitAmount)   
-      //     }
-      //   })
-      // })
-      
+      .distribute(expense.tobeSharedWith.length)
+
       expense.tobeSharedWith.map((shareObject, index) => {
         spenders.map(spender => {
-          if (spender.id.toString() === shareObject.memberId.toString()) {          
-           spender.moneySummedAndDistributed=currency(spender.moneySummedAndDistributed)
-           .add(distributedAmountArray[index])   
+          if (spender.id.toString() === shareObject.memberId.toString()) {
+            spender.moneySummedAndDistributed = currency(spender.moneySummedAndDistributed)
+              .add(distributedAmountArray[index])
           }
         })
       })
 
+    } else {
+      //check if expense amount is equal to add of contribution amounts
+      let totalAmountCheck
+       expense.tobeSharedWith.map((shareObject)=>{
+        totalAmountCheck=currency(totalAmountCheck).add(shareObject.contributionAmount)
+      })
+      if (expense.amount!==totalAmountCheck.value) return console.log(totalAmountCheck,"expense amount does not match individual contribution for unequal split")
+
+      expense.tobeSharedWith.map((shareObject) => {
+        spenders.map(spender => {
+          if (spender.id.toString() === shareObject.memberId.toString()) {
+            spender.moneySummedAndDistributed = currency(spender.moneySummedAndDistributed)
+              .add(shareObject.contributionAmount)
+          }
+        })
+      })
+    }
+
     // Loop spenders and adjust balances for each expense
     spenders.map(spender => {
-      if (expense.sender.toString() == spender.id.toString()) {
+      if (expense.sender.toString() === spender.id.toString()) {
         spender.balance = spender.balance.subtract(expense.amount)
       }
     })
   })
 
   // Loop through transfers
-  transfers.map(transfer=>{
-     // Loop spenders and adjust balances for each transfer
+  transfers.map(transfer => {
+    // Loop spenders and adjust balances for each transfer
     spenders.map(spender => {
-    if (transfer.sender.toString() == spender.id.toString()) {
-      spender.balance = spender.balance.subtract(transfer.amount)
-    }
-    if ( transfer.receiver.toString() == spender.id.toString()) {
-      spender.balance = spender.balance.add(transfer.amount)
-    }})
+      if (transfer.sender.toString() === spender.id.toString()) {
+        spender.balance = spender.balance.subtract(transfer.amount)
+      }
+      if (transfer.receiver.toString() === spender.id.toString()) {
+        spender.balance = spender.balance.add(transfer.amount)
+      }
+    })
   })
-
-  //console.log("spenders", spenders)
 
   // Separate spenders in debtors and creditors
   const debtors = []
   const creditors = []
-  //const moneyArray = currency(totalSpent).distribute(spenders.length)
-  //console.log(moneyArray)
-  //console.log("START")
+
+    //console.log("START") to debug, ucomment all console.logs 
   spenders.map((spender) => {
-    //debtOrCredit = currency(spender.balance).add(moneyArray[index])
     debtOrCredit = currency(spender.balance).add(spender.moneySummedAndDistributed.value)
     // console.log("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-    // console.log("moneyArr",spender.moneySummedAndDistributed.value)
-    // console.log("debtOrCredit",debtOrCredit)//check against excel
-    // console.log("balance",spender.balance)
+     //console.log("moneyArr",spender.moneySummedAndDistributed.value)
+     //console.log("debtOrCredit",debtOrCredit)//check against excel
+     //console.log("balance",spender.balance)
     // if debt
     if (debtOrCredit.value > 0) {
       debtors.push({
