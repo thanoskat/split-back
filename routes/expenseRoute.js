@@ -12,6 +12,7 @@ const settlepay = require("../utility/settlePayments")
 const calcPending2 = require('../utility/calcPending2')
 
 const updatePendingTransactions = async (groupId) => {
+  
   const group = await groupModel.findById(groupId).exec()
   const result = calcPending2(group.expenses, group.transfers, group.members)
   const updatedGroup = await groupModel.findByIdAndUpdate(groupId, { $set: { pendingTransactions: result.pendingTransactions, totalSpent: result.totalSpent } }, { upsert: true, returnDocument: "after" })
@@ -68,13 +69,16 @@ router.post('/addexpense1', verifyAccessToken, async (req, res) => {
 router.post('/add', verifyAccessToken, async (req, res) => {
   const groupId = toId(req.body.groupId)
   const newExpense = {
+    splitEqually:req.body.splitEqually,
     sender: req.body.sender,
     amount: req.body.amount,
     description: req.body.description,
     tobeSharedWith: req.body.tobeSharedWith,
     expenseTags: req.body.expenseTags
   }
+  console.log(newExpense)
   await groupModel.findByIdAndUpdate(groupId, { $push: { expenses: newExpense } }).exec()
+  
   return res.send(await updatePendingTransactions(groupId))
 })
 
