@@ -18,6 +18,10 @@ const groupSchema = mongoose.Schema({
   }],
   members: [{ type: mongoose.Types.ObjectId, ref: 'Users' }],
   expenses: [{
+    splitEqually: {
+      type: Boolean,
+      required: true
+    },
     sender: {
       type: mongoose.Types.ObjectId, ref: 'Users',
       required: true
@@ -32,8 +36,15 @@ const groupSchema = mongoose.Schema({
 
     },
     tobeSharedWith: [{
-      type: mongoose.Types.ObjectId, ref: 'Users',
-      required: false
+      memberId:{
+        type: mongoose.Types.ObjectId, ref: 'Users',
+        required: false
+      },
+      contributionAmount:{
+        type:Number,
+        required:false
+      }
+     
     }],
     expenseTags: [{
       type: mongoose.Types.ObjectId,
@@ -88,7 +99,11 @@ const groupSchema = mongoose.Schema({
     },
     tobeSharedWith: [{
       type: mongoose.Types.ObjectId, ref: 'Users',
-      required: false
+      required: false,
+      splitAmount: {
+        type: Number,
+        required: true
+      }
     }]
   }],
   pendingTransactions: [{

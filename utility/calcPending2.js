@@ -23,11 +23,24 @@ const calcPending2 = (expenses,transfers, members) => {
 
       //divide expense over the number of people who will share 
       const distributedAmountArray = currency(expense.amount)
-      .distribute(expense.tobeSharedWith.length)
+      .distribute(expense.tobeSharedWith.length) //for unequal split, we would have to make changes here. Personalized array will be taking the splitAmount rather than the distributed amount
       //for every tx and every spender, update their personalized array of money to equilibrium
-      expense.tobeSharedWith.map((shareID, index) => {
+     
+      //[{ id: member._id, splitAmount: "" },
+      //{ id: member._id, splitAmount: "" },
+      //{ id: member._id, splitAmount: "" }]
+      // expense.tobeSharedWith.map((shareObject) => {
+      //   spenders.map(spender => {
+      //     if (spender.id.toString() === shareObject.id.toString()) {          
+      //      spender.moneySummedAndDistributed=currency(spender.moneySummedAndDistributed)
+      //      .add(shareObject.splitAmount)   
+      //     }
+      //   })
+      // })
+      
+      expense.tobeSharedWith.map((shareObject, index) => {
         spenders.map(spender => {
-          if (spender.id.toString() == shareID.toString()) {          
+          if (spender.id.toString() === shareObject.memberId.toString()) {          
            spender.moneySummedAndDistributed=currency(spender.moneySummedAndDistributed)
            .add(distributedAmountArray[index])   
           }
