@@ -37,10 +37,10 @@ const calcPending2 = (expenses,transfers, members) => {
       //     }
       //   })
       // })
-
-      expense.tobeSharedWith.map((shareID, index) => {
+      
+      expense.tobeSharedWith.map((shareObject, index) => {
         spenders.map(spender => {
-          if (spender.id.toString() === shareID.toString()) {          
+          if (spender.id.toString() === shareObject.memberId.toString()) {          
            spender.moneySummedAndDistributed=currency(spender.moneySummedAndDistributed)
            .add(distributedAmountArray[index])   
           }

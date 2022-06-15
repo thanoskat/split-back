@@ -76,7 +76,6 @@ router.post('/add', verifyAccessToken, async (req, res) => {
     tobeSharedWith: req.body.tobeSharedWith,
     expenseTags: req.body.expenseTags
   }
-  console.log(newExpense)
   await groupModel.findByIdAndUpdate(groupId, { $push: { expenses: newExpense } }).exec()
   
   return res.send(await updatePendingTransactions(groupId))
