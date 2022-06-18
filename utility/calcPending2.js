@@ -15,7 +15,7 @@ const calcPending2 = (expenses, transfers, members) => {
   //console.log(spenders)
   // Initialize total amount spent outside of group
   let totalSpent = currency(0, { symbol: '' })
-
+  
   // Loop through expenses
   expenses.map(expense => {
 
@@ -60,7 +60,6 @@ const calcPending2 = (expenses, transfers, members) => {
       }
     })
   })
-
   // Loop through transfers
   transfers.map(transfer => {
     // Loop spenders and adjust balances for each transfer
