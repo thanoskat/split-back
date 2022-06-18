@@ -15,18 +15,19 @@ const calcPending2 = (expenses, transfers, members) => {
   //console.log(spenders)
   // Initialize total amount spent outside of group
   let totalSpent = currency(0, { symbol: '' })
-  
+
   // Loop through expenses
   expenses.map(expense => {
+    console.log(expense)
 
     totalSpent = totalSpent.add(expense.amount)
 
     if (expense.splitEqually) {
-      //divide expense over the number of people who will share 
+      //divide expense over the number of people who will share
       const distributedAmountArray = currency(expense.amount)
-      .distribute(expense.tobeSharedWith.length)
+      .distribute(expense.participants.length)
 
-      expense.tobeSharedWith.map((shareObject, index) => {
+      expense.participants.map((shareObject, index) => {
         spenders.map(spender => {
           if (spender.id.toString() === shareObject.memberId.toString()) {
             spender.moneySummedAndDistributed = currency(spender.moneySummedAndDistributed)
@@ -38,12 +39,12 @@ const calcPending2 = (expenses, transfers, members) => {
     } else {
       //check if expense amount is equal to add of contribution amounts
       let totalAmountCheck
-       expense.tobeSharedWith.map((shareObject)=>{
+       expense.participants.map((shareObject)=>{
         totalAmountCheck=currency(totalAmountCheck).add(shareObject.contributionAmount)
       })
       if (expense.amount!==totalAmountCheck.value) return console.log(totalAmountCheck,"expense amount does not match individual contribution for unequal split")
 
-      expense.tobeSharedWith.map((shareObject) => {
+      expense.participants.map((shareObject) => {
         spenders.map(spender => {
           if (spender.id.toString() === shareObject.memberId.toString()) {
             spender.moneySummedAndDistributed = currency(spender.moneySummedAndDistributed)
@@ -55,7 +56,7 @@ const calcPending2 = (expenses, transfers, members) => {
 
     // Loop spenders and adjust balances for each expense
     spenders.map(spender => {
-      if (expense.sender.toString() === spender.id.toString()) {
+      if (expense.spender.toString() === spender.id.toString()) {
         spender.balance = spender.balance.subtract(expense.amount)
       }
     })
@@ -77,7 +78,7 @@ const calcPending2 = (expenses, transfers, members) => {
   const debtors = []
   const creditors = []
 
-    //console.log("START") to debug, ucomment all console.logs 
+    //console.log("START") to debug, ucomment all console.logs
   spenders.map((spender) => {
     debtOrCredit = currency(spender.balance).add(spender.moneySummedAndDistributed.value)
     // console.log("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
@@ -138,8 +139,7 @@ const calcPending2 = (expenses, transfers, members) => {
   }
 
   return ({
-    pendingTransactions: pendingTransactions,
-    totalSpent: totalSpent.value
+    pendingTransactions: pendingTransactions
   })
 }
 

@@ -11,13 +11,14 @@ const settlepay = require("../utility/settlePayments")
 const calcPending2 = require('../utility/calcPending2')
 
 const updatePendingTransactions = async (groupId) => {
-  
+
   const group = await groupModel.findById(groupId).exec()
+  console.log(group.expenses)
   const result = calcPending2(group.expenses, group.transfers, group.members)
-  const updatedGroup = await groupModel.findByIdAndUpdate(groupId, { $set: { pendingTransactions: result.pendingTransactions, totalSpent: result.totalSpent } }, { upsert: true, returnDocument: "after" })
+  const updatedGroup = await groupModel.findByIdAndUpdate(groupId, { $set: { pendingTransactions: result.pendingTransactions } }, { upsert: true, returnDocument: "after" })
     .populate({ path: "pendingTransactions", populate: { path: "sender receiver", model: "Users" } })
     .populate({ path: "members", model: "Users" })
-    .populate({ path: "expenses", populate: { path: "sender", model: "Users" } })
+    .populate({ path: "expenses", populate: { path: "spender", model: "Users" } })
     .populate({ path: "transfers", populate: { path: "sender receiver", model: "Users" } }).exec()
 
   return (updatedGroup)
@@ -69,22 +70,20 @@ router.post('/add', verifyAccessToken, async (req, res) => {
   const groupId = toId(req.body.groupId)
   const newExpense = {
     splitEqually:req.body.splitEqually,
-    sender: req.body.sender,
+    spender: req.body.spender,
     amount: req.body.amount,
     description: req.body.description,
-    tobeSharedWith: req.body.tobeSharedWith,
-    expenseTags: req.body.expenseTags
+    participants: req.body.participants,
+    label: req.body.label
   }
   await groupModel.findByIdAndUpdate(groupId, { $push: { expenses: newExpense } }).exec()
-  
+
   return res.send(await updatePendingTransactions(groupId))
 })
 
 router.post('/remove', verifyAccessToken, async (req, res) => {
   const groupId = toId(req.body.groupId)
-  // console.log(req.body)
   await groupModel.findByIdAndUpdate(groupId, { $pull: { expenses: {_id: toId(req.body.expenseId) } }}).exec()
-  //await groupModel.findByIdAndUpdate(groupId, { $push: { groupTags: groupTags } }).exec()
   return res.send(await updatePendingTransactions(groupId))
 })
 
@@ -161,10 +160,10 @@ router.post('/addtag', verifyAccessToken, async (req, res) => {
   //console.log(req.body.groupId)
   const groupId = toId(req.body.groupId)
   const groupTag = req.body.groupTag
-  const group = await groupModel.findByIdAndUpdate(groupId, { $push: { groupTags: groupTag } }, { returnDocument: "after" })
+  const group = await groupModel.findByIdAndUpdate(groupId, { $push: { groupLabels: groupTag } }, { returnDocument: "after" })
     .populate({ path: "pendingTransactions", populate: { path: "sender receiver", model: "Users" } })
     .populate({ path: "members", model: "Users" })
-    .populate({ path: "expenses", populate: { path: "sender", model: "Users" } })
+    .populate({ path: "expenses", populate: { path: "spender", model: "Users" } })
     .populate({ path: "transfers", populate: { path: "sender receiver", model: "Users" } }).exec()
 
   return res.send(group)
@@ -174,10 +173,10 @@ router.post('/deletetag', verifyAccessToken, async (req, res) => {
   const groupId = toId(req.body.groupId)
   const groupTag = req.body.groupTag
   const group = await groupModel
-    .findByIdAndUpdate(groupId, { $pull: { groupTags: groupTag } }, { returnDocument: "after" })
+    .findByIdAndUpdate(groupId, { $pull: { groupLabels: groupTag } }, { returnDocument: "after" })
     .populate({ path: "pendingTransactions", populate: { path: "sender receiver", model: "Users" } })
     .populate({ path: "members", model: "Users" })
-    .populate({ path: "expenses", populate: { path: "sender", model: "Users" } })
+    .populate({ path: "expenses", populate: { path: "spender", model: "Users" } })
     .populate({ path: "transfers", populate: { path: "sender receiver", model: "Users" } }).exec()
 
   return res.send(group)
@@ -186,18 +185,18 @@ router.post('/deletetag', verifyAccessToken, async (req, res) => {
 router.post('/addexpense', verifyAccessToken, async (req, res) => {
   // const user = jwt.verify(req.accessToken, config.ACCESS_TOKEN_SECRET).userId
   const groupId = toId(req.body.groupId)
-  const sender = toId(req.body.sender)
+  const spender = toId(req.body.spender)
   const amount = req.body.amount
   const description = req.body.description
-  const tobeSharedWith = req.body.tobeSharedWith.map(id => toId(id))
-  const expenseTags = req.body.expenseTags.map(id => toId(id))
+  const participants = req.body.participants.map(id => toId(id))
+  const label = req.body.label.map(id => toId(id))
 
   const newExpense = {
-    sender: sender,
+    spender: spender,
     amount: amount,
     description: description,
-    tobeSharedWith: tobeSharedWith,
-    expenseTags: expenseTags
+    participants: participants,
+    label: label
   }
 
   console.log(newExpense)
@@ -248,7 +247,7 @@ router.get("/getgroupexpenses/:groupID", verifyAccessToken, async (req, res) => 
 
   //console.log("groupID", group)
   try {
-    const expenseArr = await groupModel.findOne({ _id: groupID }).populate({ path: "expenses", populate: { path: "sender", model: "Users" } })
+    const expenseArr = await groupModel.findOne({ _id: groupID }).populate({ path: "expenses", populate: { path: "spender", model: "Users" } })
     const participantArray = expenseArr.expenses
 
     settlepay.debtCalc3(participantArray)

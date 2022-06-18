@@ -16,7 +16,6 @@ const groupsRoutes = require('./routes/groupsRoutes')
 const invitationRoutes = require('./routes/invitationRoute')
 const userInfoRoute = require('./routes/userInfoRoute')
 const expenseRoute = require('./routes/expenseRoute')
-const testRoute = require('./routes/testRoute')
 
 //Middleware
 app.use(cors({
@@ -31,7 +30,6 @@ app.use('/userinfo', userInfoRoute)
 app.use('/groups', groupsRoutes)
 app.use('/invitation', invitationRoutes)
 app.use('/expense', expenseRoute)
-app.use('/test', testRoute)
 
 //ROUTES
 app.get('/', (req, res) => {
