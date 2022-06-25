@@ -7,6 +7,7 @@ const config = process.env
 const verifyAccessToken = require('../middleware/verifyAccessToken')
 const generateRefreshToken = require('../utility/generateRefreshToken')
 const generateMagicLink = require('../utility/generateMagicLink')
+const generateLoginUrl = require('../utility/generateLoginUrl')
 const generateAccessToken = require('../utility/generateAccessToken')
 const cookie = require('cookie')
 
@@ -49,6 +50,90 @@ router.post('/sendlink', async (req, res) => {
   catch (error) {
     console.log(error.message)
     res.send(error.message)
+  }
+})
+
+router.get('/verifysignin/:token', async (req, res) => {
+  try {
+    const decoded = jwt.verify(req.params.token, config.MAGICLINK_SECRET)
+    const refreshToken = generateRefreshToken()
+
+    const session = new sessionModel({
+      refreshToken: refreshToken,
+      userId: decoded.userId,
+      unique: decoded.unique,
+      createdAt: Date.now()
+    })
+    await session.save()
+  }
+  catch(error) {
+    console.log(error.message)
+  }
+})
+
+router.post('/sendsigninlink', async (req, res) => {
+  try {
+    const userFound = await userModel.findOne({ email: req.body.email }).exec()
+    const { link, unique } = generateLoginUrl(userFound._id.toString())
+    //send email here
+    console.log(link)
+    return res.status(200).send({ unique: unique })
+  }
+  catch(error) {
+    console.log(error.message)
+    return res.status(400).send(error.message)
+  }
+})
+
+router.post('/createsession', async (req, res) => {
+  try {
+    const decoded = jwt.verify(req.body.token, config.MAGICLINK_SECRET)
+    const refreshToken = generateRefreshToken()
+
+    const session = new sessionModel({
+      refreshToken: refreshToken,
+      userId: decoded.userId,
+      unique: decoded.unique,
+      createdAt: Date.now()
+    })
+    await session.save()
+    return res.status(200).send('OK')
+  }
+  catch(error) {
+    return res.status(500).send(error.message)
+  }
+})
+
+router.post('/signin', async (req, res) => {
+  try {
+    const session = await sessionModel.findOne({ unique: req.body.unique }).exec()
+    const accessToken = generateAccessToken(session.userId)
+    const user = await userModel.findById(session.userId).exec()
+
+    res.setHeader('Set-Cookie', cookie.serialize(
+      'refreshToken',
+      session.refreshToken,
+      {
+        sameSite: 'Lax',
+        httpOnly: true,
+        path: '/auth/refreshtoken',
+        expires: new Date(Date.now() + (30*24*3600000)),
+        maxAge: 10 * 24 * 60 * 60 * 1000
+      }
+    ))
+
+    res.send({
+      accessToken: accessToken,
+      sessionData: {
+        id: session._id,
+        userId: user._id,
+        userEmail: user.email,
+        userNickname: user.nickname
+      }
+    })
+  }
+  catch(error) {
+    console.log(error.message)
   }
 })
 
@@ -105,8 +190,6 @@ router.get('/v/:token', async (req, res) => {
     res.send(error.message)
   }
 })
-
-
 
 router.get('/refreshtoken', async (req, res) => { //generates new access token
   try {

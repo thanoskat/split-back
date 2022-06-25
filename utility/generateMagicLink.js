@@ -7,7 +7,7 @@ const generateMagicLink = (userId) =>
   const magicLinkToken = jwt.sign(
     { userId: userId },
     config.MAGICLINK_SECRET,
-    { expiresIn: "30m" }
+    { expiresIn: '30m' }
   )
   return `${appUrl}/v/${magicLinkToken}`
 }
