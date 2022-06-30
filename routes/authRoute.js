@@ -133,6 +133,7 @@ router.post('/signin', async (req, res) => {
     })
   }
   catch(error) {
+    res.status(500).send(error.message)
     console.log(error.message)
   }
 })
