@@ -9,6 +9,10 @@ const sessionSchema = mongoose.Schema({
     type: String,
     required: true
   },
+  unique: {
+    type: String,
+    required: false
+  },
   // DONT DELETE
   // previousRefreshToken: {
   //   type: String,

@@ -1,8 +1,19 @@
-const express = require('express')
-const app = express()
-const mongoose = require('mongoose')
 const config = require('dotenv').config().parsed
+const express = require('express')
+const WsServer = require('ws')
+const mongoose = require('mongoose')
 const cors = require('cors')
+
+const { createServer } = require('http')
+const app = express()
+const server = createServer(app)
+
+const initWs = () => {
+  const options = {
+    noServer: true
+  }
+  return newWsServer.Server(options)
+}
 
 //Connect To DB
 mongoose.connect(
@@ -16,6 +27,7 @@ const groupsRoutes = require('./routes/groupsRoutes')
 const invitationRoutes = require('./routes/invitationRoute')
 const userInfoRoute = require('./routes/userInfoRoute')
 const expenseRoute = require('./routes/expenseRoute')
+
 
 //Middleware
 app.use(cors({
