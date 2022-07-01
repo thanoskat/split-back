@@ -77,7 +77,7 @@ router.post('/sendsigninlink', async (req, res) => {
     const { link, unique } = generateLoginUrl(userFound._id.toString())
     //send email here
     console.log(link)
-    return res.status(200).send({ unique: unique })
+    return res.status(200).send({ unique: unique, link: link })
   }
   catch(error) {
     console.log(error.message)
