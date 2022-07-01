@@ -24,6 +24,51 @@ const updatePendingTransactions = async (groupId) => {
   return (updatedGroup)
 }
 
+//create a route where you will be adding member in expense which will be flagged as sharedEqually and its participants length will be equal to members length. Then run update pending transactions
+
+router.post('/updateExpenses', verifyAccessToken, async (req, res) => {
+
+  const groupId = toId(req.body.groupId)
+  const toBeupdatedExpenses = req.body.toBeupdatedExpenses
+  const userId = toId(jwt.verify(req.accessToken, config.ACCESS_TOKEN_SECRET).userId)
+  const toBeUpdatedGroup = await groupModel.findById(groupId)
+
+  const bulk = []
+  //we need a check to avoid duplecate entrance just in case
+  toBeupdatedExpenses.map((toBeupdatedExpense) => {
+    toBeUpdatedGroup.expenses.map((toBeUpdatedGroupExpense) => {
+      if (toId(toBeupdatedExpense._id).equals(toBeUpdatedGroupExpense._id)) {
+        bulk.push({
+          updateOne: {
+            'filter': {
+              "_id": groupId,
+            },
+            'update': { $push: { "expenses.$[elem].participants": { memberId: userId } } },
+            'arrayFilters': [{ "elem._id": toBeUpdatedGroupExpense._id }],
+            'upsert': true
+          },
+        })
+      }
+    })
+  })
+
+  //console.log(bulk)
+  const result = await groupModel.bulkWrite(bulk)
+    .then(bulkWriteOpResult => {
+      console.log('BULK update OK');
+      console.log(JSON.stringify(bulkWriteOpResult, null, 2));
+    })
+    .catch(err => {
+      console.log('BULK update error');
+      console.log(JSON.stringify(err, null, 2));
+    });
+
+  return res.send(await updatePendingTransactions(groupId))
+
+})
+
+
+
 //CREATES EXPENSE REQUEST AND UPDATES EXPENSE AND DESCRIPTION ARRAYS WHEN NEW DATA IS AVAILABLE (deprecated)
 router.post('/addexpense1', verifyAccessToken, async (req, res) => {
 
@@ -69,7 +114,7 @@ router.post('/addexpense1', verifyAccessToken, async (req, res) => {
 router.post('/add', verifyAccessToken, async (req, res) => {
   const groupId = toId(req.body.groupId)
   const newExpense = {
-    splitEqually:req.body.splitEqually,
+    splitEqually: req.body.splitEqually,
     spender: req.body.spender,
     amount: req.body.amount,
     description: req.body.description,
@@ -83,7 +128,7 @@ router.post('/add', verifyAccessToken, async (req, res) => {
 
 router.post('/remove', verifyAccessToken, async (req, res) => {
   const groupId = toId(req.body.groupId)
-  await groupModel.findByIdAndUpdate(groupId, { $pull: { expenses: {_id: toId(req.body.expenseId) } }}).exec()
+  await groupModel.findByIdAndUpdate(groupId, { $pull: { expenses: { _id: toId(req.body.expenseId) } } }).exec()
   return res.send(await updatePendingTransactions(groupId))
 })
 
@@ -229,7 +274,7 @@ router.post('/addtransfer', verifyAccessToken, async (req, res) => {
   }
 
   await groupModel.findByIdAndUpdate(groupId, { $push: { transfers: newTransfer } }).exec()
-  const group =await updatePendingTransactions(groupId)
+  const group = await updatePendingTransactions(groupId)
   return res.send(group)
 })
 
