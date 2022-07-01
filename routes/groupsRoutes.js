@@ -16,6 +16,7 @@ const updatePendingTransactions = async (groupId) => {
   await groupModel.findByIdAndUpdate(groupId, { $set: { pendingTransactions: result.pendingTransactions } }, { upsert: true }).exec()
 }
 
+
 router.post('/label/edit', verifyAccessToken, async (req, res) => {
   await groupModel.updateOne({ 'groupLabels._id': toId(req.body.id) }, { $set: { 'groupLabels.$.name': req.body.text } }).exec()
   const group = await groupModel.findById(req.body.groupid)
