@@ -14,7 +14,7 @@ const initWs = () => {
   }
   return newWsServer.Server(options)
 }
-
+console.log('process.env.DB_CONNECTION', process.env.DB_CONNECTION)
 //Connect To DB
 mongoose.connect(
   process.env.DB_CONNECTION,

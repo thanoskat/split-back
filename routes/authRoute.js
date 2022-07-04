@@ -78,6 +78,7 @@ router.post('/sendsigninlink', async (req, res) => {
     const userFound = await userModel.findOne({ email: req.body.email }).exec()
     const { link, unique } = generateLoginUrl(userFound._id.toString())
     //send email here
+    console.log(req.body.email, link, ip, userAgent)
     emailHandler.sendSignInLink(req.body.email, link, ip, userAgent)
     return res.status(200).send({ unique: unique, link: link })
   }
