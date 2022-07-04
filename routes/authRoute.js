@@ -144,7 +144,7 @@ router.post('/signin', async (req, res) => {
 router.get('/v/:token', async (req, res) => {
   try {
     // Extract user ID from magic link
-    const decoded = jwt.verify(req.params.token, process.envMAGICLINK_SECRET)
+    const decoded = jwt.verify(req.params.token, process.env.MAGICLINK_SECRET)
 
     // Generate a refresh token
     const refreshToken = generateRefreshToken()

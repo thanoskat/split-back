@@ -29,7 +29,7 @@ router.post('/updateExpenses', verifyAccessToken, async (req, res) => {
 
   const groupId = toId(req.body.groupId)
   const toBeupdatedExpenses = req.body.toBeupdatedExpenses
-  const userId = toId(jwt.verify(req.accessToken, process.envACCESS_TOKEN_SECRET).userId)
+  const userId = toId(jwt.verify(req.accessToken, process.env.ACCESS_TOKEN_SECRET).userId)
   const toBeUpdatedGroup = await groupModel.findById(groupId)
 
   const bulk = []
@@ -135,7 +135,7 @@ router.post('/addexpense2', verifyAccessToken, async (req, res) => {
   const groupID = toId(req.body.groupID);
   const amount = req.body.amount;
   // const spenderID = toId(req.body.spenderID);
-  const spenderID = jwt.verify(req.accessToken, process.envACCESS_TOKEN_SECRET).userId
+  const spenderID = jwt.verify(req.accessToken, process.env.ACCESS_TOKEN_SECRET).userId
   const description = req.body.description
 
   if (isNaN(amount) || amount < 0) {
@@ -200,7 +200,7 @@ router.post('/addexpense2', verifyAccessToken, async (req, res) => {
 })
 
 router.post('/addtag', verifyAccessToken, async (req, res) => {
-  // const user = jwt.verify(req.accessToken, process.envACCESS_TOKEN_SECRET).userId
+  // const user = jwt.verify(req.accessToken, process.env.ACCESS_TOKEN_SECRET).userId
   //console.log(req.body.groupId)
   const groupId = toId(req.body.groupId)
   const groupTag = req.body.groupTag
@@ -227,7 +227,7 @@ router.post('/deletetag', verifyAccessToken, async (req, res) => {
 })
 
 router.post('/addexpense', verifyAccessToken, async (req, res) => {
-  // const user = jwt.verify(req.accessToken, process.envACCESS_TOKEN_SECRET).userId
+  // const user = jwt.verify(req.accessToken, process.env.ACCESS_TOKEN_SECRET).userId
   const groupId = toId(req.body.groupId)
   const spender = toId(req.body.spender)
   const amount = req.body.amount
@@ -251,7 +251,7 @@ router.post('/addexpense', verifyAccessToken, async (req, res) => {
 })
 
 router.post('/addtransfer', verifyAccessToken, async (req, res) => {
-  // const user = jwt.verify(req.accessToken, process.envACCESS_TOKEN_SECRET).userId
+  // const user = jwt.verify(req.accessToken, process.env.ACCESS_TOKEN_SECRET).userId
   const groupId = toId(req.body.groupId)
   // TODO check if user belongs to group
   const sender = toId(req.body.sender)
@@ -282,7 +282,7 @@ router.post('/addtransfer', verifyAccessToken, async (req, res) => {
 //check settlePayments functions one by one and update variables and you're set.
 router.get("/getgroupexpenses/:groupID", verifyAccessToken, async (req, res) => {
   const groupID = req.params.groupID;
-  const userID = jwt.verify(req.accessToken, process.envACCESS_TOKEN_SECRET).userId
+  const userID = jwt.verify(req.accessToken, process.env.ACCESS_TOKEN_SECRET).userId
   const isDebtorOrOwned = (value) => {
     if (String(value.debtorID) === userID || String(value.ownedID) === userID) {
       return value;

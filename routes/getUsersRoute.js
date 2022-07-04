@@ -16,7 +16,7 @@ router.get('/', verifyAccessToken, async (req, res) => {
 })
 
 router.get('/profile', verifyAccessToken, async (req, res) => {
-  const decodeID = toId(jwt.verify(req.accessToken ,process.envACCESS_TOKEN_SECRET).userId) //this is a userID
+  const decodeID = toId(jwt.verify(req.accessToken ,process.env.ACCESS_TOKEN_SECRET).userId) //this is a userID
   try{
    const user = await Users.findById({_id:decodeID}).populate({path:"groups",populate:{path:"pendingTransactions",populate:{path:"sender receiver", model:"Users"}}})
     .populate({path:"groups",populate:{path:"members", model:"Users"}})
