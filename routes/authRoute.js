@@ -6,6 +6,7 @@ const jwt = require('jsonwebtoken')
 const config = process.env
 const verifyAccessToken = require('../middleware/verifyAccessToken')
 const generateRefreshToken = require('../utility/generateRefreshToken')
+const emailHandler = require('../utility/emailHandler')
 const generateMagicLink = require('../utility/generateMagicLink')
 const generateLoginUrl = require('../utility/generateLoginUrl')
 const generateAccessToken = require('../utility/generateAccessToken')
@@ -15,7 +16,7 @@ router.post('/signup', async (req, res) => {
 
   const emailCount = await userModel.countDocuments({ email: req.body.email })
   if (emailCount) {
-    return  res.status(400).json({ message: "This email already exists" })
+    return  res.status(400).json({ message: 'This email already exists' })
   }
 
   try {
@@ -73,10 +74,12 @@ router.get('/verifysignin/:token', async (req, res) => {
 
 router.post('/sendsigninlink', async (req, res) => {
   try {
+    const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress
+    const userAgent = req.headers["user-agent"]
     const userFound = await userModel.findOne({ email: req.body.email }).exec()
     const { link, unique } = generateLoginUrl(userFound._id.toString())
     //send email here
-    console.log(link)
+    emailHandler.sendSignInLink(req.body.email, link, ip, userAgent)
     return res.status(200).send({ unique: unique, link: link })
   }
   catch(error) {
@@ -196,19 +199,19 @@ router.get('/refreshtoken', async (req, res) => { //generates new access token
   try {
     // Getting refresh token from httponly cookie.
     const refreshToken = cookie.parse(req.headers.cookie).refreshToken
-    if (!refreshToken) return res.status(400).send("Refresh cookie not found.")
-    console.log("Old refresh token", refreshToken.slice(refreshToken.length - 10))
+    if (!refreshToken) return res.status(400).send('Refresh cookie not found.')
+    console.log('Old refresh token', refreshToken.slice(refreshToken.length - 10))
 
     // Checking if session exists in db.
     const sessionFound = await sessionModel.findOne({ refreshToken: refreshToken }).exec()
-    if (!sessionFound) return res.status(401).send("Session not found.")
+    if (!sessionFound) return res.status(401).send('Session not found.')
 
     // Checking if session is expired.
     const expInSeconds = (sessionFound.toObject().createdAt.getTime() + process.env.SESSION_TTL_IN_SECONDS * 1000 - Date.now()) / 1000
     console.log(expInSeconds > 0 ? `Session expires in ${Math.trunc(expInSeconds)} seconds` : `Session expired ${Math.trunc(expInSeconds * -1)} seconds ago`)
     if ((sessionFound.toObject().createdAt.getTime() + process.env.SESSION_TTL_IN_SECONDS * 1000) < Date.now()) {
       await sessionModel.findByIdAndDelete(sessionFound.toObject()._id).exec()
-      return res.status(401).send("Session is expired.")
+      return res.status(401).send('Session is expired.')
     }
 
     res.setHeader('Set-Cookie', cookie.serialize(
@@ -241,25 +244,25 @@ router.get('/refreshtoken_with_rotation', async (req, res) => { //generates new 
   try {
     // Getting refresh token from httponly cookie.
     const refreshToken = cookie.parse(req.headers.cookie).refreshToken
-    if (!refreshToken) return res.status(400).send("Refresh cookie not found.")
-    console.log("Old refresh token", refreshToken.slice(refreshToken.length - 10))
+    if (!refreshToken) return res.status(400).send('Refresh cookie not found.')
+    console.log('Old refresh token', refreshToken.slice(refreshToken.length - 10))
 
     // Checking if session exists in db.
     const sessionFound = await sessionModel.findOne({ $or: [{ refreshToken: refreshToken }, { previousRefreshToken: refreshToken }] }).exec()
-    if (!sessionFound) return res.status(401).send("Session not found.")
+    if (!sessionFound) return res.status(401).send('Session not found.')
 
     // Checking if refresh token has been used before. 419
-    if (sessionFound.toObject().previousRefreshToken == refreshToken) return res.status(401).send("Refresh token has been used before.")
+    if (sessionFound.toObject().previousRefreshToken == refreshToken) return res.status(401).send('Refresh token has been used before.')
 
     // Checking if refresh token has been revoked.
-    if (sessionFound.toObject().revoked == true) return res.status(401).send("Refresh token has been revoked.")
+    if (sessionFound.toObject().revoked == true) return res.status(401).send('Refresh token has been revoked.')
 
     // Checking if session is expired.
     const expInSeconds = (sessionFound.toObject().createdAt.getTime() + 1440 * 60 * 1000 - Date.now()) / 1000
     console.log(expInSeconds > 0 ? `Session expires in ${Math.trunc(expInSeconds)} seconds` : `Session expired ${Math.trunc(expInSeconds * -1)} seconds ago`)
     if ((sessionFound.toObject().createdAt.getTime() + 1440 * 60 * 1000) < Date.now()) {
       await sessionModel.findByIdAndUpdate(sessionFound.toObject()._id, { revoked: true }).exec()
-      return res.status(401).send("Session is expired.")
+      return res.status(401).send('Session is expired.')
     }
 
     const newRefreshToken = generateRefreshToken()
@@ -310,18 +313,18 @@ router.post('/signout', verifyAccessToken, async (req, res) => {
       }
     ))
 
-    res.send("Signed out")
+    res.send('Signed out')
   }
   catch (error) {
     console.log(error.message)
-    res.send("Error while signing out")
+    res.send('Error while signing out')
   }
 })
 
 router.get('/clearsessions', async (req, res) => {
   try {
     await sessionModel.deleteMany({})
-    console.log("Session collection cleared.")
+    console.log('Session collection cleared.')
     res.sendStatus(200)
   }
   catch (error) {
@@ -332,7 +335,7 @@ router.get('/clearsessions', async (req, res) => {
 router.get('/clearusers', async (req, res) => {
   try {
     await userModel.deleteMany({})
-    console.log("User collection cleared.")
+    console.log('User collection cleared.')
     res.sendStatus(200)
   }
   catch (error) {

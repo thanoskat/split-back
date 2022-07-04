@@ -17,6 +17,8 @@
     "express": "^4.17.1",
     "jsonwebtoken": "^8.5.1",
     "mongoose": "^6.0.12",
+    "nodemailer": "^6.7.6",
+    "nodemailer-juice": "^1.0.1",
     "nodemon": "^2.0.14",
     "validator": "^13.7.0",
     "ws": "^8.8.0"

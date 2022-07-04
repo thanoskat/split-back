@@ -17,7 +17,7 @@ const initWs = () => {
 
 //Connect To DB
 mongoose.connect(
-  config.DB_CONNECTION,
+  process.env.DB_CONNECTION,
   () => console.log('Connected to DB!'))
 
 //Import Routes
