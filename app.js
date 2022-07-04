@@ -1,4 +1,4 @@
-const config = require('dotenv').config().parsed
+require('dotenv').config()
 const express = require('express')
 const WsServer = require('ws')
 const mongoose = require('mongoose')
@@ -14,10 +14,9 @@ const initWs = () => {
   }
   return newWsServer.Server(options)
 }
-
 //Connect To DB
 mongoose.connect(
-  process.env.DB_CONNECTION,
+  'mongodb+srv://dbSplitUser:1423qrwe@cluster0.mqehg.mongodb.net/db1?retryWrites=true&w=majority',
   () => console.log('Connected to DB!'))
 
 //Import Routes
@@ -33,7 +32,7 @@ const expenseRoute = require('./routes/expenseRoute')
 app.use(cors({
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   credentials: true,
-  origin: config.FRONT_URL
+  origin: process.env.FRONT_URL
 }))
 app.use(express.json())
 app.use('/auth', authRoute)

@@ -3,7 +3,6 @@ const mongoose = require('mongoose')
 const userModel = require('../models/userModel')
 const sessionModel = require('../models/sessionModel')
 const jwt = require('jsonwebtoken')
-const config = process.env
 const verifyAccessToken = require('../middleware/verifyAccessToken')
 const generateRefreshToken = require('../utility/generateRefreshToken')
 const emailHandler = require('../utility/emailHandler')
@@ -56,7 +55,7 @@ router.post('/sendlink', async (req, res) => {
 
 router.get('/verifysignin/:token', async (req, res) => {
   try {
-    const decoded = jwt.verify(req.params.token, config.MAGICLINK_SECRET)
+    const decoded = jwt.verify(req.params.token, process.env.MAGICLINK_SECRET)
     const refreshToken = generateRefreshToken()
 
     const session = new sessionModel({
@@ -90,7 +89,7 @@ router.post('/sendsigninlink', async (req, res) => {
 
 router.post('/createsession', async (req, res) => {
   try {
-    const decoded = jwt.verify(req.body.token, config.MAGICLINK_SECRET)
+    const decoded = jwt.verify(req.body.token, process.env.MAGICLINK_SECRET)
     const refreshToken = generateRefreshToken()
 
     const session = new sessionModel({
@@ -144,7 +143,7 @@ router.post('/signin', async (req, res) => {
 router.get('/v/:token', async (req, res) => {
   try {
     // Extract user ID from magic link
-    const decoded = jwt.verify(req.params.token, config.MAGICLINK_SECRET)
+    const decoded = jwt.verify(req.params.token, process.envMAGICLINK_SECRET)
 
     // Generate a refresh token
     const refreshToken = generateRefreshToken()
