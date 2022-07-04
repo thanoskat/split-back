@@ -14,9 +14,10 @@ const initWs = () => {
   }
   return newWsServer.Server(options)
 }
+
 //Connect To DB
 mongoose.connect(
-  'mongodb+srv://dbSplitUser:1423qrwe@cluster0.mqehg.mongodb.net/db1?retryWrites=true&w=majority',
+  process.env.DB_CONNECTION,
   () => console.log('Connected to DB!'))
 
 //Import Routes
