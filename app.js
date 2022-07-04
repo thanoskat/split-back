@@ -48,4 +48,4 @@ app.get('/', (req, res) => {
   res.send('We are on home')
 })
 
-app.listen(4000, () => console.log('Server running'))
+app.listen(4000, '0.0.0.0', () => console.log('Server running'))
