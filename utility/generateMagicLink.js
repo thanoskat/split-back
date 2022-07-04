@@ -2,10 +2,10 @@ const jwt = require('jsonwebtoken')
 
 const generateMagicLink = (userId) =>
 {
-  const appUrl = process.envFRONT_URL
+  const appUrl = process.env.FRONT_URL
   const magicLinkToken = jwt.sign(
     { userId: userId },
-    process.envMAGICLINK_SECRET,
+    process.env.MAGICLINK_SECRET,
     { expiresIn: '30m' }
   )
   return `${appUrl}/v/${magicLinkToken}`
