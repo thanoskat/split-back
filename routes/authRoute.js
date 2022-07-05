@@ -7,9 +7,48 @@ const verifyAccessToken = require('../middleware/verifyAccessToken')
 const generateRefreshToken = require('../utility/generateRefreshToken')
 const emailHandler = require('../utility/emailHandler')
 const generateMagicLink = require('../utility/generateMagicLink')
-const generateLoginUrl = require('../utility/generateLoginUrl')
+const generateSignInConfirmLink = require('../utility/generateSignInConfirmLink')
+const generateSignUpConfirmLink = require('../utility/generateSignUpConfirmLink')
 const generateAccessToken = require('../utility/generateAccessToken')
 const cookie = require('cookie')
+
+router.post('/verify-sign-up-token', async (req, res) => {
+  try {
+    const decoded = jwt.verify(req.body.token, process.env.MAGICLINK_SECRET)
+
+    const newUser = new userModel({
+      email: decoded.email,
+      nickname: decoded.nickname,
+    })
+    const savedUser = await newUser.save()
+
+    const refreshToken = generateRefreshToken()
+    const session = new sessionModel({
+      refreshToken: refreshToken,
+      userId: savedUser._id,
+      unique: decoded.unique,
+      createdAt: Date.now()
+    })
+    await session.save()
+    return res.status(200).send('OK')
+  }
+  catch(error) {
+    return res.status(500).send(error.message)
+  }
+})
+
+router.post('/request-sign-up', async (req, res) => {
+
+  const emailCount = await userModel.countDocuments({ email: req.body.email })
+  if (emailCount) {
+    return  res.status(400).json({ message: 'This email already exists' })
+  }
+
+  const { link, unique } = generateSignUpConfirmLink(req.body.email, req.body.nickname)
+
+  emailHandler.sendSignUpVerification(req.body.email, link)
+  return res.status(200).send({ unique: unique })
+})
 
 router.post('/signup', async (req, res) => {
 
@@ -71,14 +110,13 @@ router.get('/verifysignin/:token', async (req, res) => {
   }
 })
 
-router.post('/sendsigninlink', async (req, res) => {
+router.post('/request-sign-in', async (req, res) => {
   try {
     const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress
     const userAgent = req.headers["user-agent"]
     const userFound = await userModel.findOne({ email: req.body.email }).exec()
-    const { link, unique } = generateLoginUrl(userFound._id.toString())
-    //send email here
-    console.log(req.body.email, link, ip, userAgent)
+    const { link, unique } = generateSignInConfirmLink(userFound._id.toString())
+    console.log('/auth/sendsigninlink')
     emailHandler.sendSignInLink(req.body.email, link, ip, userAgent)
     return res.status(200).send({ unique: unique, link: link })
   }
@@ -88,7 +126,7 @@ router.post('/sendsigninlink', async (req, res) => {
   }
 })
 
-router.post('/createsession', async (req, res) => {
+router.post('/verify-sign-in-token', async (req, res) => {
   try {
     const decoded = jwt.verify(req.body.token, process.env.MAGICLINK_SECRET)
     const refreshToken = generateRefreshToken()
@@ -136,8 +174,8 @@ router.post('/signin', async (req, res) => {
     })
   }
   catch(error) {
-    res.status(500).send(error.message)
     console.log(error.message)
+    res.status(500).send(error.message)
   }
 })
 
@@ -303,7 +341,7 @@ router.post('/signout', verifyAccessToken, async (req, res) => {
 
     res.setHeader('Set-Cookie', cookie.serialize(
       'refreshToken',
-      refreshToken,
+      'HALLO',
       {
         sameSite: 'Lax',
         httpOnly: true,
@@ -316,7 +354,7 @@ router.post('/signout', verifyAccessToken, async (req, res) => {
     res.send('Signed out')
   }
   catch (error) {
-    console.log(error.message)
+    console.log('/signout', error.message)
     res.send('Error while signing out')
   }
 })
