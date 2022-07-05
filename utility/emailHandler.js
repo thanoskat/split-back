@@ -2,7 +2,7 @@ const nodemailer = require('nodemailer')
 const inLineCss = require('nodemailer-juice')
 const fs = require('fs')
 const handlebars = require('handlebars')
-
+console.log(process.env.ACCOUNT_EMAIL_ADDRESS, process.env.ACCOUNT_EMAIL_PASS)
 const transporter = nodemailer.createTransport({
   host: 'mail.privateemail.com',
   secure: true,
