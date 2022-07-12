@@ -9,52 +9,142 @@ const emailHandler = require('../utility/emailHandler')
 const generateMagicLink = require('../utility/generateMagicLink')
 const generateSignInConfirmLink = require('../utility/generateSignInConfirmLink')
 const generateSignUpConfirmLink = require('../utility/generateSignUpConfirmLink')
+const { checkSignIn, checkSignUp } = require('../utility/validators')
 const generateAccessToken = require('../utility/generateAccessToken')
 const cookie = require('cookie')
 
-router.post('/verify-sign-up-token', async (req, res) => {
-  try {
-    const decoded = jwt.verify(req.body.token, process.env.MAGICLINK_SECRET)
+router.post('/verify-token', async (req, res) => {
 
-    const newUser = new userModel({
-      email: decoded.email,
-      nickname: decoded.nickname,
-    })
-    const savedUser = await newUser.save()
+  jwt.verify(req.body.token, process.env.MAGICLINK_SECRET, async (error, decoded) => {
+    if(error) {
+      if(error.message === 'jwt expired') {
+        return res.status(400).send({ message: 'Verification link has expired.' })
+      }
+      else if(error.message === 'jwt malformed') {
+        return res.status(400).send({ message: 'Verification link is invalid. #001' })
+      }
+      else if(error.message === 'invalid signature') {
+        return res.status(400).send({ message: 'Verification link is invalid. #002' })
+      }
+      else {
+        return res.status(500).send({ message: error.message })
+      }
+    }
 
-    const refreshToken = generateRefreshToken()
-    const session = new sessionModel({
-      refreshToken: refreshToken,
-      userId: savedUser._id,
-      unique: decoded.unique,
-      createdAt: Date.now()
-    })
-    await session.save()
-    return res.status(200).send('OK')
-  }
-  catch(error) {
-    return res.status(500).send(error.message)
-  }
+    if(decoded.type === undefined) {
+      return res.status(400).send({ message: 'Verification link is invalid. #003' })
+    }
+    else if(decoded.type === 'sign-in') {
+      try {
+        const refreshToken = generateRefreshToken()
+        const newSession = new sessionModel({
+          refreshToken: refreshToken,
+          userId: decoded.userId,
+          unique: decoded.unique,
+          createdAt: Date.now()
+        })
+        newSession.save((error, savedSession) => {
+          if(error) {
+            return res.status(500).send({ message: error._message })
+          }
+          else {
+            return res.status(200).send({ type: 'sign-in' })
+          }
+        })
+      }
+      catch(error) {
+        return res.status(500).send(error.message)
+      }
+    }
+    else if(decoded.type === 'sign-up') {
+      try {
+        if (await userModel.countDocuments({ email: decoded.email })) {
+          return  res.status(400).send({ message: 'There is already an account associated with this email address.' })
+        }
+
+        const newUser = new userModel({
+          email: decoded.email,
+          nickname: decoded.nickname,
+        })
+        newUser.save((error, savedUser) => {
+          if(error) {
+            return res.status(400).send({ message: error._message })
+          }
+          else {
+            const refreshToken = generateRefreshToken()
+            const newSession = new sessionModel({
+              refreshToken: refreshToken,
+              userId: savedUser._id,
+              unique: decoded.unique,
+              createdAt: Date.now()
+            })
+            newSession.save((error, savedSession) => {
+              if(error) {
+                return res.status(500).send({ message: error._message })
+              }
+              else {
+                return res.status(200).send({ type: 'sign-up' })
+              }
+            })
+          }
+        })
+      }
+      catch(error) {
+        return res.status(500).send({ message: error.message })
+      }
+    }
+    else {
+      return res.status(400).send({ message: 'Verification link is invalid. #004' })
+    }
+  })
 })
 
 router.post('/request-sign-up', async (req, res) => {
 
-  const emailCount = await userModel.countDocuments({ email: req.body.email })
-  if (emailCount) {
-    return  res.status(400).json({ message: 'This email already exists' })
+  try {
+    const checkSignUpResult = checkSignUp({
+      nickname: req.body.nickname,
+      email: req.body.email
+    })
+    if(Array.isArray(checkSignUpResult)) {
+      return res.status(400).send(checkSignUpResult)
+    }
+
+    if (await userModel.countDocuments({ email: req.body.email })){
+      return  res.status(400).send([
+        {
+          field: 'email',
+          message: 'There is already an account associated with this email address'
+        }
+      ])
+    }
+
+    const { link, unique } = generateSignUpConfirmLink(req.body.email, req.body.nickname)
+    emailHandler.sendSignUpVerification(req.body.email, link)
+
+    res.setHeader('Set-Cookie', cookie.serialize(
+      'unique',
+      unique,
+      {
+        sameSite: 'Lax',
+        httpOnly: true,
+        path: '/auth/sign-in',
+        expires: new Date(Date.now() + (30 * 24 * 3600000)),
+        maxAge: 10 * 24 * 60 * 60 * 1000
+      }
+    ))
+    return res.status(200).send({ message: `A sign up confirmation email has been sent to ${req.body.email}` })
   }
-
-  const { link, unique } = generateSignUpConfirmLink(req.body.email, req.body.nickname)
-
-  emailHandler.sendSignUpVerification(req.body.email, link)
-  return res.status(200).send({ unique: unique })
+  catch(error) {
+    return res.status(500).send({ message: error.message})
+  }
 })
 
 router.post('/signup', async (req, res) => {
 
   const emailCount = await userModel.countDocuments({ email: req.body.email })
   if (emailCount) {
-    return  res.status(400).json({ message: 'This email already exists' })
+    return res.status(400).json({ message: 'This email already exists' })
   }
 
   try {
@@ -111,26 +201,78 @@ router.get('/verifysignin/:token', async (req, res) => {
 })
 
 router.post('/request-sign-in', async (req, res) => {
-  try {
-    const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress
-    const userAgent = req.headers["user-agent"]
-    const userFound = await userModel.findOne({ email: req.body.email }).exec()
-    const { link, unique } = generateSignInConfirmLink(userFound._id.toString())
-    console.log('/auth/sendsigninlink')
-    emailHandler.sendSignInLink(req.body.email, link, ip, userAgent)
-    return res.status(200).send({ unique: unique, link: link })
+
+  const checkSignInResult = checkSignIn({
+    email: req.body.email
+  })
+
+  if(Array.isArray(checkSignInResult)) {
+    return res.status(400).send(checkSignInResult)
   }
-  catch(error) {
-    console.log(error.message)
-    return res.status(400).send(error.message)
-  }
+
+  const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress
+  const userAgent = req.headers["user-agent"]
+  userModel.findOne({ email: req.body.email }, (error, userFound) => {
+    if(error) {
+      console.log(error._message)
+      return res.status(500).send({ message: error._message })
+    }
+    if(userFound) {
+      try {
+        const { link, unique } = generateSignInConfirmLink(userFound._id.toString())
+        emailHandler.sendSignInLink(req.body.email, link, ip, userAgent)
+
+        res.setHeader('Set-Cookie', cookie.serialize(
+          'unique',
+          unique,
+          {
+            sameSite: 'Lax',
+            httpOnly: true,
+            path: '/auth/sign-in',
+            expires: new Date(Date.now() + (30 * 24 * 3600000)),
+            maxAge: 10 * 24 * 60 * 60 * 1000
+          }
+        ))
+        console.log("hello")
+        return res.sendStatus(200)
+      }
+      catch(error) {
+        return res.status(500).send({ message: error.message })
+      }
+    }
+    else {
+      return res.status(401).send({ message: 'No account found associated with this email address.' })
+    }
+  })
+
+  // try {
+  //   const { link, unique } = generateSignInConfirmLink(userFound._id.toString())
+  //   emailHandler.sendSignInLink(req.body.email, link, ip, userAgent)
+
+  //   res.setHeader('Set-Cookie', cookie.serialize(
+  //     'unique',
+  //     unique,
+  //     {
+  //       sameSite: 'Lax',
+  //       httpOnly: true,
+  //       path: '/auth/sign-in',
+  //       expires: new Date(Date.now() + (30 * 24 * 3600000)),
+  //       maxAge: 10 * 24 * 60 * 60 * 1000
+  //     }
+  //   ))
+  //   return res.status(200).send({ link: link })
+  // }
+  // catch(error) {
+  //   console.log(error.message)
+  //   return res.status(400).send(error.message)
+  // }
 })
 
 router.post('/verify-sign-in-token', async (req, res) => {
   try {
     const decoded = jwt.verify(req.body.token, process.env.MAGICLINK_SECRET)
-    const refreshToken = generateRefreshToken()
 
+    const refreshToken = generateRefreshToken()
     const session = new sessionModel({
       refreshToken: refreshToken,
       userId: decoded.userId,
@@ -145,11 +287,17 @@ router.post('/verify-sign-in-token', async (req, res) => {
   }
 })
 
-router.post('/signin', async (req, res) => {
+router.post('/sign-in', async (req, res) => {
   try {
-    const session = await sessionModel.findOne({ unique: req.body.unique }).exec()
+    if(req.cookies?.unique === undefined) return res.status(400).send({ message: 'Cookie not found. Please try again.' })
+    const unique = req.cookies.unique
+
+    const session = await sessionModel.findOneAndUpdate({ unique: unique }, { $unset: { unique: unique }}).exec()
+    if(!session) return res.status(401).send({ message: 'Click the link in your email before you continue.' })
+
     const accessToken = generateAccessToken(session.userId)
     const user = await userModel.findById(session.userId).exec()
+    if(!user) return res.status(500).send({ message: 'User not found. Authentication failed.' })
 
     res.setHeader('Set-Cookie', cookie.serialize(
       'refreshToken',
@@ -158,10 +306,16 @@ router.post('/signin', async (req, res) => {
         sameSite: 'Lax',
         httpOnly: true,
         path: '/auth/refreshtoken',
-        expires: new Date(Date.now() + (30*24*3600000)),
+        expires: new Date(Date.now() + (30 * 24 * 3600000)),
         maxAge: 10 * 24 * 60 * 60 * 1000
       }
     ))
+
+    res.clearCookie('unique', {
+      sameSite: 'Lax',
+      httpOnly: true,
+      path: '/auth/sign-in',
+    })
 
     res.send({
       accessToken: accessToken,
@@ -174,8 +328,7 @@ router.post('/signin', async (req, res) => {
     })
   }
   catch(error) {
-    console.log(error.message)
-    res.status(500).send(error.message)
+    return res.status(500).send({ message: error.message})
   }
 })
 
@@ -209,7 +362,7 @@ router.get('/v/:token', async (req, res) => {
         sameSite: 'Lax',
         httpOnly: true,
         path: '/auth/refreshtoken',
-        expires: new Date(Date.now() + (30*24*3600000)),
+        expires: new Date(Date.now() + (30 * 24 * 3600000)),
         maxAge: 10 * 24 * 60 * 60 * 1000
       }
     ))
@@ -259,7 +412,7 @@ router.get('/refreshtoken', async (req, res) => { //generates new access token
         sameSite: 'Lax',
         httpOnly: true,
         path: '/auth/refreshtoken',
-        expires: new Date(Date.now() + (30*24*3600000)),
+        expires: new Date(Date.now() + (30 * 24 * 3600000)),
         maxAge: 10 * 24 * 60 * 60 * 1000
       }
     ))
@@ -314,7 +467,7 @@ router.get('/refreshtoken_with_rotation', async (req, res) => { //generates new 
         sameSite: 'Lax',
         httpOnly: true,
         path: '/auth/refreshtoken',
-        expires: new Date(Date.now() + (30*24*3600000)),
+        expires: new Date(Date.now() + (30 * 24 * 3600000)),
         maxAge: 10 * 24 * 60 * 60 * 1000
       }
     ))
@@ -339,23 +492,16 @@ router.post('/signout', verifyAccessToken, async (req, res) => {
     // await sessionModel.findByIdAndUpdate(mongoose.Types.ObjectId(req.body.sessionID), { revoked: true }).exec()
     await sessionModel.findByIdAndDelete(mongoose.Types.ObjectId(req.body.sessionID)).exec()
 
-    res.setHeader('Set-Cookie', cookie.serialize(
-      'refreshToken',
-      'HALLO',
-      {
-        sameSite: 'Lax',
-        httpOnly: true,
-        path: '/auth/refreshtoken',
-        expires: new Date(Date.now() + (30*24*3600000)),
-        maxAge: 10 * 24 * 60 * 60 * 1000
-      }
-    ))
-
+    res.clearCookie('refreshToken', {
+      sameSite: 'Lax',
+      httpOnly: true,
+      path: '/auth/refreshtoken',
+    })
     res.send('Signed out')
   }
   catch (error) {
     console.log('/signout', error.message)
-    res.send('Error while signing out')
+    res.send('/signout', error.message)
   }
 })
 

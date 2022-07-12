@@ -1,4 +1,5 @@
 require('dotenv').config()
+const cookieParser = require('cookie-parser')
 const express = require('express')
 const WsServer = require('ws')
 const mongoose = require('mongoose')
@@ -34,6 +35,7 @@ app.use(cors({
   credentials: true,
   origin: process.env.FRONT_URL
 }))
+app.use(cookieParser())
 app.use(express.json())
 app.use('/auth', authRoute)
 app.use('/getusers', getUsersRoute)

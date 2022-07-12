@@ -7,6 +7,7 @@ const generateSignUpConfirmLink = (email, nickname) => {
 
   const signUpToken = jwt.sign(
     {
+      type: 'sign-up',
       email: email,
       nickname: nickname,
       unique: unique
@@ -17,7 +18,7 @@ const generateSignUpConfirmLink = (email, nickname) => {
 
   return(
     {
-      link: `${process.env.FRONT_URL}/su/${signUpToken}`,
+      link: `${process.env.FRONT_URL}/s/${signUpToken}`,
       unique: unique
     }
   )

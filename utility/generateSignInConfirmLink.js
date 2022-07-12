@@ -7,6 +7,7 @@ const generateSignInConfirmLink = (userId) => {
 
   const loginUrlToken = jwt.sign(
     {
+      type: 'sign-in',
       userId: userId,
       unique: unique
     },
@@ -16,7 +17,7 @@ const generateSignInConfirmLink = (userId) => {
 
   return(
     {
-      link: `${process.env.FRONT_URL}/si/${loginUrlToken}`,
+      link: `${process.env.FRONT_URL}/s/${loginUrlToken}`,
       unique: unique
     }
   )
