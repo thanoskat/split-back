@@ -1,24 +1,27 @@
 const jwt = require('jsonwebtoken')
 const crypto = require('crypto')
 
-const generateLoginUrl = (userId) => {
+const generateSignUpConfirmLink = (email, nickname) => {
 
   const unique = crypto.randomBytes(20).toString('hex')
 
-  const loginUrlToken = jwt.sign(
+  const signUpToken = jwt.sign(
     {
-      userId: userId,
+      type: 'sign-up',
+      email: email,
+      nickname: nickname,
       unique: unique
     },
     process.env.MAGICLINK_SECRET,
     { expiresIn: '30m' }
   )
+
   return(
     {
-      link: `${process.env.FRONT_URL}/s/${loginUrlToken}`,
+      link: `${process.env.FRONT_URL}/s/${signUpToken}`,
       unique: unique
     }
   )
 }
 
-module.exports = generateLoginUrl
+module.exports = generateSignUpConfirmLink

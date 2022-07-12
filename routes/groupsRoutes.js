@@ -7,7 +7,6 @@ const toId = mongoose.Types.ObjectId; //builds object from string ID
 const verifyAccessToken = require('../middleware/verifyAccessToken')
 const jwt = require('jsonwebtoken');
 const { findById, deleteOne } = require("../models/groupModel");
-const config = process.env
 const calcPending2 = require('../utility/calcPending2')
 
 const updatePendingTransactions = async (groupId) => {
@@ -49,7 +48,7 @@ router.post('/label/remove', verifyAccessToken, async (req, res) => {
 //creators are automatically members of group they create
 router.post("/creategroup", verifyAccessToken, async (req, res) => {
   try {
-    const creatorID = toId(jwt.verify(req.accessToken, config.ACCESS_TOKEN_SECRET).userId)
+    const creatorID = toId(jwt.verify(req.accessToken, process.env.ACCESS_TOKEN_SECRET).userId)
     const group = new groupModel({
       creator: creatorID,
       title: req.body.title,
@@ -299,7 +298,7 @@ router.post("/deletegroup", verifyAccessToken, async (req, res) => {
 
 // FINDS GROUP CREATED BY USER
 router.get("/groupsbycreator", verifyAccessToken, async (req, res) => {
-  const creatorID = toId(jwt.verify(req.accessToken, config.ACCESS_TOKEN_SECRET).userId)
+  const creatorID = toId(jwt.verify(req.accessToken, process.env.ACCESS_TOKEN_SECRET).userId)
   const groups = await groupModel.find({ creator: creatorID }).exec()
   res.send(groups)
 })
@@ -310,7 +309,7 @@ router.get("/groupsbycreator", verifyAccessToken, async (req, res) => {
 //16
 
 router.get("/mygroups", verifyAccessToken, async (req, res) => {
-  const userID = toId(jwt.verify(req.accessToken, config.ACCESS_TOKEN_SECRET).userId)
+  const userID = toId(jwt.verify(req.accessToken, process.env.ACCESS_TOKEN_SECRET).userId)
   const groups = await userModel.findById(userID).populate({ path: 'groups', populate: { path: 'pendingTransactions', populate: { path: "sender receiver", model: "Users" } } })
     .populate({ path: 'groups', populate: { path: 'members', model: 'Users' } })
     .populate({ path: 'groups', populate: { path: 'expenses', populate: { path: "spender", model: "Users" } } })
