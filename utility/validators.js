@@ -110,13 +110,15 @@ const checkExpense = (expense) => {
           memberId: objectID,
           contributionAmount: {
             type: 'string',
-            empty: false,
-            numeric: true,
-            custom: (value, errors) => {
-              if(currency(value).value <= 0) {
-                errors.push({
-                  type: 'amountPositive',
-                })
+            // empty: false,
+            // numeric: true,
+            custom: (value, errors, schema, name, parent, context) => {
+              if(!context.data.splitEqually) {
+                if(currency(value).value <= 0) {
+                  errors.push({
+                    type: 'amountPositive',
+                  })
+                }
               }
               return value
             },
@@ -130,12 +132,9 @@ const checkExpense = (expense) => {
     label: {
       ...objectID,
       optional: true
-    },
-    // expense: {
-    //   type: 'any',
-    //   optional: true,
-    // }
+    }
   }
+
   const check = v.compile(schema)
   return check(expense)
 }

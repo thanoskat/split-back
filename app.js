@@ -9,6 +9,37 @@ const { createServer } = require('http')
 const app = express()
 const server = createServer(app)
 
+const { checkExpense } = require('./utility/validators')
+const checkExpenseResult = checkExpense({
+  split: {
+    equal: true,
+    contributions: ['a', '']
+  },
+  splitEqually: false,
+  spender: '0123456789abcdef01234567',
+  amount: '74.84',
+  description: 'train',
+  participants: [
+    {
+      memberId: '0123456789abcdef01234567',
+      contributionAmount: 'a'
+    }
+  ],
+  label: '0123456789abcdef01234561'
+})
+console.log(checkExpenseResult)
+
+// const currency = require('currency.js')
+
+// console.log(currency('12345678908974235793.54', { useVedic: true, separator: ',', decimal: '.', symbol: '€' }).format())
+// console.log(currency('', { symbol: '' }).format())
+
+// var twoDecimanRegExp = /^[0-9]*(\.[0-9]{0,2})?$/
+// console.log(twoDecimanRegExp.test('00.'))
+
+// const regex = /^[0-9]*\.[0-9]{0,2}$/
+// console.log(regex.test('0.'))
+
 const initWs = () => {
   const options = {
     noServer: true

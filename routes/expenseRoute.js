@@ -115,13 +115,13 @@ router.post('/add', verifyAccessToken, async (req, res) => {
 
     const checkExpenseResult = checkExpense(req.body.newExpense)
     console.log(checkExpenseResult)
-    if(Array.isArray(checkExpenseResult)) return res.status(400).send(checkExpenseResult)
+    if(Array.isArray(checkExpenseResult)) return res.status(200).send({ validationArray: checkExpenseResult })
     req.body.newExpense.amount = currency(req.body.newExpense.amount).value
     req.body.newExpense.participants = req.body.newExpense.participants.map(participant => ({ ...participant, contributionAmount: currency(participant.contributionAmount).value }))
 
-
     await groupModel.findByIdAndUpdate(req.body.newExpense.groupId, { $push: { expenses: req.body.newExpense } }).exec()
-    res.send(await updatePendingTransactions(req.body.newExpense.groupId))
+    const updatedGroup = await updatePendingTransactions(req.body.newExpense.groupId)
+    res.send(updatedGroup)
   }
   catch(error) {
     console.log(error.message)
@@ -129,20 +129,20 @@ router.post('/add', verifyAccessToken, async (req, res) => {
   }
 })
 
-// router.post('/add', verifyAccessToken, async (req, res) => {
-//   const groupId = toId(req.body.groupId)
-//   const newExpense = {
-//     splitEqually: req.body.splitEqually,
-//     spender: req.body.spender,
-//     amount: req.body.amount,
-//     description: req.body.description,
-//     participants: req.body.participants,
-//     label: req.body.label
-//   }
-//   await groupModel.findByIdAndUpdate(groupId, { $push: { expenses: newExpense } }).exec()
+router.post('/add2', verifyAccessToken, async (req, res) => {
+  const groupId = toId(req.body.groupId)
+  const newExpense = {
+    splitEqually: req.body.splitEqually,
+    spender: req.body.spender,
+    amount: req.body.amount,
+    description: req.body.description,
+    participants: req.body.participants,
+    label: req.body.label
+  }
+  await groupModel.findByIdAndUpdate(groupId, { $push: { expenses: newExpense } }).exec()
 
-//   return res.send(await updatePendingTransactions(groupId))
-// })
+  return res.send(await updatePendingTransactions(groupId))
+})
 
 router.post('/remove', verifyAccessToken, async (req, res) => {
   const groupId = toId(req.body.groupId)
