@@ -1,12 +1,12 @@
-const express = require("express")
+const express = require('express')
 const router = express.Router()
-const groupModel = require("../models/groupModel")
+const groupModel = require('../models/groupModel')
 const userModel = require('../models/userModel')
-const mongoose = require("mongoose");
-const toId = mongoose.Types.ObjectId; //builds object from string ID
+const mongoose = require('mongoose')
+const toId = mongoose.Types.ObjectId //builds object from string ID
 const verifyAccessToken = require('../middleware/verifyAccessToken')
-const jwt = require('jsonwebtoken');
-const { findById, deleteOne } = require("../models/groupModel");
+const jwt = require('jsonwebtoken')
+const { findById, deleteOne } = require('../models/groupModel')
 const calcPending2 = require('../utility/calcPending2')
 
 const updatePendingTransactions = async (groupId) => {
@@ -19,10 +19,10 @@ const updatePendingTransactions = async (groupId) => {
 router.post('/label/edit', verifyAccessToken, async (req, res) => {
   await groupModel.updateOne({ 'groupLabels._id': toId(req.body.id) }, { $set: { 'groupLabels.$.name': req.body.text } }).exec()
   const group = await groupModel.findById(req.body.groupid)
-    .populate({ path: "pendingTransactions", populate: { path: "sender receiver", model: "Users" } })
-    .populate({ path: "members", model: "Users" })
-    .populate({ path: "expenses", populate: { path: "spender", model: "Users" } })
-    .populate({ path: "transfers", populate: { path: "sender receiver", model: "Users" } }).exec()
+    .populate({ path: 'pendingTransactions', populate: { path: 'sender receiver', model: 'Users' } })
+    .populate({ path: 'members', model: 'Users' })
+    .populate({ path: 'expenses', populate: { path: 'spender', model: 'Users' } })
+    .populate({ path: 'transfers', populate: { path: 'sender receiver', model: 'Users' } }).exec()
   res.send(group)
 })
 
@@ -32,11 +32,11 @@ router.post('/label/remove', verifyAccessToken, async (req, res) => {
   const labelId = req.body.labelId
   try {
     const group = await groupModel
-      .findByIdAndUpdate(groupId, { $pull: { groupLabels: { _id: labelId } } }, { returnDocument: "after" })
-      .populate({ path: "pendingTransactions", populate: { path: "sender receiver", model: "Users" } })
-      .populate({ path: "members", model: "Users" })
-      .populate({ path: "expenses", populate: { path: "spender", model: "Users" } })
-      .populate({ path: "transfers", populate: { path: "sender receiver", model: "Users" } }).exec()
+      .findByIdAndUpdate(groupId, { $pull: { groupLabels: { _id: labelId } } }, { returnDocument: 'after' })
+      .populate({ path: 'pendingTransactions', populate: { path: 'sender receiver', model: 'Users' } })
+      .populate({ path: 'members', model: 'Users' })
+      .populate({ path: 'expenses', populate: { path: 'spender', model: 'Users' } })
+      .populate({ path: 'transfers', populate: { path: 'sender receiver', model: 'Users' } }).exec()
     return res.send(group)
   }
   catch (error) {
@@ -46,7 +46,7 @@ router.post('/label/remove', verifyAccessToken, async (req, res) => {
 
 //CREATE GROUP WITH USER'S ID. DON'T HAVE TO WORRY ABOUT MULTIPLE GROUPS
 //creators are automatically members of group they create
-router.post("/creategroup", verifyAccessToken, async (req, res) => {
+router.post('/creategroup', verifyAccessToken, async (req, res) => {
   try {
     const creatorID = toId(jwt.verify(req.accessToken, process.env.ACCESS_TOKEN_SECRET).userId)
     const group = new groupModel({
@@ -54,7 +54,7 @@ router.post("/creategroup", verifyAccessToken, async (req, res) => {
       title: req.body.title,
       groupLabels: req.body.groupLabels
     })
-    const savedGroup = await group.save();
+    const savedGroup = await group.save()
     await addUserToGroup(group._id, creatorID) //creators are automatically members of group they create
 
     res.send(savedGroup._id) //sending group ID as response to client instead of OK status
@@ -67,7 +67,7 @@ router.post("/creategroup", verifyAccessToken, async (req, res) => {
 
 
 //CREATES NEW GROUP REQUEST
-router.post("/creategrouprequest", verifyAccessToken, async (req, res) => {
+router.post('/creategrouprequest', verifyAccessToken, async (req, res) => {
   try {
     // Tests if request has already been sent
 
@@ -98,7 +98,7 @@ router.post("/creategrouprequest", verifyAccessToken, async (req, res) => {
         status: 0, //0 pending, 1 accepted, 2 declined. For new requests that should be set to 0,
         groupToJoin: req.body.groupToJoin
       })
-      const newReq = await newGroupRequest.save();
+      const newReq = await newGroupRequest.save()
       await userModel.findByIdAndUpdate(req.body.recipient, { $push: { requests: newReq } }).exec()
       return res.sendStatus(200)
     }
@@ -110,7 +110,7 @@ router.post("/creategrouprequest", verifyAccessToken, async (req, res) => {
 })
 
 //SENDS MULTIPLE GROUP REQUESTS TO USERS
-router.post("/createmultigrouprequests", verifyAccessToken, async (req, res) => {
+router.post('/createmultigrouprequests', verifyAccessToken, async (req, res) => {
   try {
     // Tests if request has already been sent
     //this test might be reduntant.It's good to exist as a safety measure
@@ -146,7 +146,7 @@ router.post("/createmultigrouprequests", verifyAccessToken, async (req, res) => 
           status: 0, //0 pending, 1 accepted, 2 declined. For new requests that should be set to 0,
           groupToJoin: req.body.groupToJoin
         })
-        let newReq = await newGroupRequest.save();
+        let newReq = await newGroupRequest.save()
         await userModel.findByIdAndUpdate(recipient, { $push: { requests: newReq } }).exec()
 
       }
@@ -155,7 +155,7 @@ router.post("/createmultigrouprequests", verifyAccessToken, async (req, res) => 
     return res.sendStatus(200)
   }
   catch (error) {
-    console.dir("Multi req error", error)
+    console.dir('Multi req error', error)
     res.send(error.message)
   }
 })
@@ -175,44 +175,44 @@ router.get('/getgrouprequests', verifyAccessToken, async (req, res) => {
     weeks = days / 7
 
 
-    // console.log("secs", Math.trunc(secs))
-    // console.log("mins", Math.trunc(mins))
-    // console.log("hours", Math.trunc(hours))
-    // console.log("days", Math.trunc(days))
-    // console.log("weeks", Math.trunc(weeks))
+    // console.log('secs', Math.trunc(secs))
+    // console.log('mins', Math.trunc(mins))
+    // console.log('hours', Math.trunc(hours))
+    // console.log('days', Math.trunc(days))
+    // console.log('weeks', Math.trunc(weeks))
 
 
-    if (Math.trunc(weeks) == 0 && Math.trunc(days) == 0 && Math.trunc(hours) == 0 && Math.trunc(mins) == 0) return { timeago: Math.trunc(secs), format: "sec" }
-    if (Math.trunc(weeks) == 0 && Math.trunc(days) == 0 && Math.trunc(hours) == 0 && Math.trunc(mins) !== 0) return { timeago: Math.trunc(mins), format: "min" }
-    if (Math.trunc(weeks) == 0 && Math.trunc(days) == 0 && Math.trunc(hours) !== 0 && Math.trunc(hours) == 1) return { timeago: Math.trunc(hours), format: "hour" }
-    if (Math.trunc(weeks) == 0 && Math.trunc(days) == 0 && Math.trunc(hours) !== 0) return { timeago: Math.trunc(hours), format: "hours" }
-    if (Math.trunc(weeks) == 0 && Math.trunc(days) !== 0 && Math.trunc(days) == 1) return { timeago: Math.trunc(days), format: "day" }
-    if (Math.trunc(weeks) == 0 && Math.trunc(days) !== 0) return { timeago: Math.trunc(days), format: "days" }
-    if (Math.trunc(weeks) !== 0 && Math.trunc(weeks) == 1) return { timeago: Math.trunc(weeks), format: "week" }
-    if (Math.trunc(weeks) !== 0) return { timeago: Math.trunc(weeks), format: "weeks" }
+    if (Math.trunc(weeks) == 0 && Math.trunc(days) == 0 && Math.trunc(hours) == 0 && Math.trunc(mins) == 0) return { timeago: Math.trunc(secs), format: 'sec' }
+    if (Math.trunc(weeks) == 0 && Math.trunc(days) == 0 && Math.trunc(hours) == 0 && Math.trunc(mins) !== 0) return { timeago: Math.trunc(mins), format: 'min' }
+    if (Math.trunc(weeks) == 0 && Math.trunc(days) == 0 && Math.trunc(hours) !== 0 && Math.trunc(hours) == 1) return { timeago: Math.trunc(hours), format: 'hour' }
+    if (Math.trunc(weeks) == 0 && Math.trunc(days) == 0 && Math.trunc(hours) !== 0) return { timeago: Math.trunc(hours), format: 'hours' }
+    if (Math.trunc(weeks) == 0 && Math.trunc(days) !== 0 && Math.trunc(days) == 1) return { timeago: Math.trunc(days), format: 'day' }
+    if (Math.trunc(weeks) == 0 && Math.trunc(days) !== 0) return { timeago: Math.trunc(days), format: 'days' }
+    if (Math.trunc(weeks) !== 0 && Math.trunc(weeks) == 1) return { timeago: Math.trunc(weeks), format: 'week' }
+    if (Math.trunc(weeks) !== 0) return { timeago: Math.trunc(weeks), format: 'weeks' }
 
   }
 
-  // const requests = await userModel.findById(userId).populate("requests", "requester recipient groupToJoin status").exec()
+  // const requests = await userModel.findById(userId).populate('requests', 'requester recipient groupToJoin status').exec()
   const requests = await requestsModel.find({ recipient: userId }).populate('requester', 'nickname').populate('groupToJoin', 'title').exec()
   const dateFormatRequests = requests.map(item => {
     const container = {}
-    container["_id"] = item._id,
-      container["requester"] = item.requester,
-      container["recipient"] = item.recipient
-    container["status"] = item.status,
-      container["groupToJoin"] = item.groupToJoin,
-      container["date"] = getTimeSince(new Date(item.date).getTime())
-    return container;
+    container['_id'] = item._id,
+      container['requester'] = item.requester,
+      container['recipient'] = item.recipient
+    container['status'] = item.status,
+      container['groupToJoin'] = item.groupToJoin,
+      container['date'] = getTimeSince(new Date(item.date).getTime())
+    return container
   })
   // console.log(dateFormatRequests)
   res.send(dateFormatRequests)
 })
 
-router.get("/deletegroups", async (req, res) => {
+router.get('/deletegroups', async (req, res) => {
   try {
     await groupModel.deleteMany({})
-    console.log("Model collection cleared.")
+    console.log('Model collection cleared.')
     res.sendStatus(200)
   }
   catch (error) {
@@ -220,9 +220,9 @@ router.get("/deletegroups", async (req, res) => {
   }
 })
 
-router.post("/removeuserfromgroup", verifyAccessToken, async (req, res) => {
-  const userID = toId(req.body.userID);
-  const groupID = toId(req.body.groupID);
+router.post('/removeuserfromgroup', verifyAccessToken, async (req, res) => {
+  const userID = toId(req.body.userID)
+  const groupID = toId(req.body.groupID)
 
   try {
     await groupModel.findByIdAndUpdate(groupID, { $pull: { members: userID } }).exec()
@@ -238,12 +238,12 @@ router.post("/removeuserfromgroup", verifyAccessToken, async (req, res) => {
 
 
 //ADD USER TO GROUP. ASSESS IF USER ALREADY EXISTS AND EXIT, OTHERWISE ADD
-router.post("/addUserToGroup", verifyAccessToken, async (req, res) => {
+router.post('/addUserToGroup', verifyAccessToken, async (req, res) => {
   //takes a group id and adds a person to group
-  const userID = toId(req.body.userID);  //ID of user to be added
-  const groupID = toId(req.body.groupID);  //ID of group that user will be added to
-  const creatorID = toId(req.queryUserId) //id of user who;s adding someone to group
-  //const ownGroups = await groupModel.find({creator:creatorID}).exec(); //groups created by person who's adding to group
+  const userID = toId(req.body.userID)  //ID of user to be added
+  const groupID = toId(req.body.groupID)  //ID of group that user will be added to
+  const creatorID = toId(req.queryUserId) //id of user whos adding someone to group
+  //const ownGroups = await groupModel.find({creator:creatorID}).exec() //groups created by person who's adding to group
   //tests if user is owner of group
   if (await groupModel.countDocuments({ creator: creatorID, _id: groupID }).exec()) {
     try {
@@ -259,27 +259,27 @@ router.post("/addUserToGroup", verifyAccessToken, async (req, res) => {
     }
   }
   else {
-    console.log("Can't add user to not owned group")
+    console.log('Can\'t add user to not owned group')
     res.sendStatus(400)
   }
   //look into request schema for userID to see if request is pending
 })
 
 //DELETES GROUP AND REMOVES IT FROM USER'S ARRAY
-router.delete("/deletegroup/:groupID", async (req, res) => {
-  const groupID = (toId(req.params.groupID));
+router.delete('/deletegroup/:groupID', async (req, res) => {
+  const groupID = (toId(req.params.groupID))
   try {
     const removeGroup = await groupModel.deleteOne({ _id: groupID }) //deletes group
     const userGroupRemoval = await userModel.updateMany({/*_id:userID for specific document in collection*/ }, { $pull: { groups: groupID } }) //deletes group from groups of Person collection when group is deleted
     res.json({ removeGroup, userGroupRemoval })
   }
   catch (err) {
-    res.json({ message: err });
+    res.json({ message: err })
   }
 })
 
-router.post("/deletegroup", verifyAccessToken, async (req, res) => {
-  const groupId = (toId(req.body.groupId));
+router.post('/deletegroup', verifyAccessToken, async (req, res) => {
+  const groupId = (toId(req.body.groupId))
   try {
     await userModel.updateMany(
       { /*_id:userID for specific document in collection*/ },
@@ -297,72 +297,72 @@ router.post("/deletegroup", verifyAccessToken, async (req, res) => {
 })
 
 // FINDS GROUP CREATED BY USER
-router.get("/groupsbycreator", verifyAccessToken, async (req, res) => {
+router.get('/groupsbycreator', verifyAccessToken, async (req, res) => {
   const creatorID = toId(jwt.verify(req.accessToken, process.env.ACCESS_TOKEN_SECRET).userId)
   const groups = await groupModel.find({ creator: creatorID }).exec()
   res.send(groups)
 })
 
 // populate:{path:'members',model:'Users'},
-// populate:{path:'expenses', populate: {path: "spender", model: "Users" }},
-// populate:{path:'transfers',populate: {path: "sender receiver", model: "Users" }}}
+// populate:{path:'expenses', populate: {path: 'spender', model: 'Users' }},
+// populate:{path:'transfers',populate: {path: 'sender receiver', model: 'Users' }}}
 //16
 
-router.get("/mygroups", verifyAccessToken, async (req, res) => {
+router.get('/mygroups', verifyAccessToken, async (req, res) => {
   const userID = toId(jwt.verify(req.accessToken, process.env.ACCESS_TOKEN_SECRET).userId)
-  const groups = await userModel.findById(userID).populate({ path: 'groups', populate: { path: 'pendingTransactions', populate: { path: "sender receiver", model: "Users" } } })
+  const groups = await userModel.findById(userID).populate({ path: 'groups', populate: { path: 'pendingTransactions', populate: { path: 'sender receiver', model: 'Users' } } })
     .populate({ path: 'groups', populate: { path: 'members', model: 'Users' } })
-    .populate({ path: 'groups', populate: { path: 'expenses', populate: { path: "spender", model: "Users" } } })
-    .populate({ path: 'groups', populate: { path: 'transfers', populate: { path: "sender receiver", model: "Users" } } }).exec()
+    .populate({ path: 'groups', populate: { path: 'expenses', populate: { path: 'spender', model: 'Users' } } })
+    .populate({ path: 'groups', populate: { path: 'transfers', populate: { path: 'sender receiver', model: 'Users' } } }).exec()
   return res.send(groups.groups)
 })
 
 
-router.get("/:groupId", verifyAccessToken, async (req, res) => {
-  const group = await groupModel.findById(req.params.groupId).populate({ path: "pendingTransactions", populate: { path: "sender receiver", model: "Users" } })
-    .populate({ path: "members", model: "Users" })
-    .populate({ path: "transactions", populate: { path: "sender receiver", model: "Users" } })
+router.get('/:groupId', verifyAccessToken, async (req, res) => {
+  const group = await groupModel.findById(req.params.groupId).populate({ path: 'pendingTransactions', populate: { path: 'sender receiver', model: 'Users' } })
+    .populate({ path: 'members', model: 'Users' })
+    .populate({ path: 'transactions', populate: { path: 'sender receiver', model: 'Users' } })
   res.send(group)
 })
 
 //GET WHOLE GROUP
-router.get("/", verifyAccessToken, async (req, res) => {
+router.get('/', verifyAccessToken, async (req, res) => {
   const group = await groupModel.find()
-    .populate({ path: "pendingTransactions", populate: { path: "sender receiver", model: "Users" } })
-    .populate({ path: "members", model: "Users" })
-    .populate({ path: "expenses", populate: { path: "spender", model: "Users" } })
-    .populate({ path: "transfers", populate: { path: "sender receiver", model: "Users" } })
+    .populate({ path: 'pendingTransactions', populate: { path: 'sender receiver', model: 'Users' } })
+    .populate({ path: 'members', model: 'Users' })
+    .populate({ path: 'expenses', populate: { path: 'spender', model: 'Users' } })
+    .populate({ path: 'transfers', populate: { path: 'sender receiver', model: 'Users' } })
 
   res.send(group)
 })
 
 // Get group by id
-router.post("/getgroup", verifyAccessToken, async (req, res) => {
+router.post('/getgroup', verifyAccessToken, async (req, res) => {
   const group = await groupModel.findById(req.body.groupid)
-    .populate({ path: "pendingTransactions", populate: { path: "sender receiver", model: "Users" } })
-    .populate({ path: "members", model: "Users" })
-    .populate({ path: "expenses", populate: { path: "spender", model: "Users" } })
-    .populate({ path: "transfers", populate: { path: "sender receiver", model: "Users" } }).exec()
+    .populate({ path: 'pendingTransactions', populate: { path: 'sender receiver', model: 'Users' } })
+    .populate({ path: 'members', model: 'Users' })
+    .populate({ path: 'expenses', populate: { path: 'spender', model: 'Users' } })
+    .populate({ path: 'transfers', populate: { path: 'sender receiver', model: 'Users' } }).exec()
   res.send(group)
 })
 
-router.get("/group/:groupID", verifyAccessToken, async (req, res) => {
-  const group = await groupModel.findById(req.params.groupID).populate("members", "nickname")
+router.get('/group/:groupID', verifyAccessToken, async (req, res) => {
+  const group = await groupModel.findById(req.params.groupID).populate('members', 'nickname')
   // console.log(JSON.stringify(group, null, 2))
   res.send(group)
 })
 
 //GIVEN USER ID GET GROUPS THEY BELONG TO
-router.get("/groupsinuserID/:userID", async (req, res) => {
+router.get('/groupsinuserID/:userID', async (req, res) => {
   const userID = toId(req.params.userID)
-  const groups = await userModel.findById({ _id: userID }).populate("groups", "title members")
+  const groups = await userModel.findById({ _id: userID }).populate('groups', 'title members')
   res.json(groups)
 })
 
 //GIVEN GROUP ID GET USERS IN THAT PARTICULAR GROUP
-router.get("/usersingroupID/:groupID", async (req, res) => {
+router.get('/usersingroupID/:groupID', async (req, res) => {
   const groupID = toId(req.params.groupID)
-  const users = await groupModel.findById({ _id: groupID }).populate("members", "name amount")
+  const users = await groupModel.findById({ _id: groupID }).populate('members', 'name amount')
   res.json(users)
 })
 
@@ -392,12 +392,12 @@ const addUserToGroup = async (groupID, userID) => {
 /////////////////////////////////Testing/////////////////////////////////////
 
 // HANDLES ACCEPT OR DECLINE
-router.post("/requesthandler", verifyAccessToken, async (req, res) => {
-  const status = req.body.status;
+router.post('/requesthandler', verifyAccessToken, async (req, res) => {
+  const status = req.body.status
   if (status === 2) { //if user declined request - delete request from model
     try {
       await requestsModel.deleteOne({ _id: req.body._id })
-      console.log("deleted request with id", req.body._id)
+      console.log('deleted request with id', req.body._id)
       res.sendStatus(200)
     }
     catch (error) {
@@ -405,21 +405,21 @@ router.post("/requesthandler", verifyAccessToken, async (req, res) => {
     }
   }
   else { //else if user accepts add user to group
-    const userID = toId(req.queryUserId);  //ID of user to be added (current account that will accept request)
-    const requestID = toId(req.body._id); //request ID
+    const userID = toId(req.queryUserId)  //ID of user to be added (current account that will accept request)
+    const requestID = toId(req.body._id) //request ID
     const getRequestModelByID = await requestsModel.findById({ _id: requestID })
-    const groupID = getRequestModelByID.groupToJoin;  //ID of group that user will be added to
+    const groupID = getRequestModelByID.groupToJoin  //ID of group that user will be added to
     const creatorID = getRequestModelByID.requester
 
     //await requestsModel.findByIdAndUpdate(req.body._id, {status}) Updates requests schema model - not needed at the moment - could be useful if we want to keep actions in the future
 
     //tests if user is owner of group and whether status is pending
     if (!await groupModel.countDocuments({ creator: creatorID, _id: groupID }).exec()) {
-      console.log("Can't add user to not owned group")
+      console.log('Can\'t add user to not owned group')
       return res.sendStatus(400)
     }
     if (!getRequestModelByID.status === 0) {
-      console.log("Status is not pending")
+      console.log('Status is not pending')
       return res.sendStatus(400)
     }
     else {
@@ -442,4 +442,4 @@ router.post("/requesthandler", verifyAccessToken, async (req, res) => {
 
 
 
-module.exports = router;
+module.exports = router

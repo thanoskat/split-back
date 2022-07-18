@@ -1,4 +1,4 @@
-const currency = require("currency.js");
+const currency = require('currency.js')
 
 const calcPending2 = (expenses, transfers, members) => {
 
@@ -18,7 +18,6 @@ const calcPending2 = (expenses, transfers, members) => {
 
   // Loop through expenses
   expenses.map(expense => {
-    console.log(expense)
 
     totalSpent = totalSpent.add(expense.amount)
 
@@ -42,7 +41,7 @@ const calcPending2 = (expenses, transfers, members) => {
        expense.participants.map((shareObject)=>{
         totalAmountCheck=currency(totalAmountCheck).add(shareObject.contributionAmount)
       })
-      if (expense.amount!==totalAmountCheck.value) return console.log(totalAmountCheck,"expense amount does not match individual contribution for unequal split")
+      if (expense.amount!==totalAmountCheck.value) return console.log(totalAmountCheck,'expense amount does not match individual contribution for unequal split')
 
       expense.participants.map((shareObject) => {
         spenders.map(spender => {
@@ -78,13 +77,13 @@ const calcPending2 = (expenses, transfers, members) => {
   const debtors = []
   const creditors = []
 
-    //console.log("START") to debug, ucomment all console.logs
+    //console.log('START') to debug, ucomment all console.logs
   spenders.map((spender) => {
     debtOrCredit = currency(spender.balance).add(spender.moneySummedAndDistributed.value)
-    // console.log("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-     //console.log("moneyArr",spender.moneySummedAndDistributed.value)
-     //console.log("debtOrCredit",debtOrCredit)//check against excel
-     //console.log("balance",spender.balance)
+    // console.log('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
+     //console.log('moneyArr',spender.moneySummedAndDistributed.value)
+     //console.log('debtOrCredit',debtOrCredit)//check against excel
+     //console.log('balance',spender.balance)
     // if debt
     if (debtOrCredit.value > 0) {
       debtors.push({
