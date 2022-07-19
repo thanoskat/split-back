@@ -396,7 +396,7 @@ router.get('/refreshtoken', async (req, res) => { //generates new access token
     // Getting refresh token from httponly cookie.
     const refreshToken = cookie.parse(req.headers.cookie).refreshToken
     if (!refreshToken) return res.status(400).send('Refresh cookie not found.')
-    console.log('Old refresh token', refreshToken.slice(refreshToken.length - 10))
+    console.log('Refresh token', refreshToken.slice(refreshToken.length - 10))
 
     // Checking if session exists in db.
     const sessionFound = await sessionModel.findOne({ refreshToken: refreshToken }).exec()
@@ -424,7 +424,7 @@ router.get('/refreshtoken', async (req, res) => { //generates new access token
 
     // Sending a response with a new access token.
     const newAccessToken = generateAccessToken(sessionFound.userId) //generates new access token
-    console.log(`\nNew access token ${newAccessToken.slice(newAccessToken.length - 10)}.`)
+    console.log(`New access token ${newAccessToken.slice(newAccessToken.length - 10)}.`)
     // setTimeout(() => res.send({ newAccessToken: newAccessToken }), 5000)
     // return 200
     return res.send({ newAccessToken: newAccessToken })

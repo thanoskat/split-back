@@ -1,24 +1,25 @@
-const express = require("express");
-const router = express.Router();
-const groupModel = require("../models/groupModel")
+const express = require('express')
+const router = express.Router()
+const groupModel = require('../models/groupModel')
 const userModel = require('../models/userModel')
-const mongoose = require("mongoose");
-const toId = mongoose.Types.ObjectId; //builds object from string ID
+const mongoose = require('mongoose')
+const toId = mongoose.Types.ObjectId //builds object from string ID
 const verifyAccessToken = require('../middleware/verifyAccessToken')
-const jwt = require('jsonwebtoken');
-const settlepay = require("../utility/settlePayments")
+const jwt = require('jsonwebtoken')
+const settlepay = require('../utility/settlePayments')
 const calcPending2 = require('../utility/calcPending2')
+const { checkExpense } = require('../utility/validators')
+const currency = require('currency.js')
 
 const updatePendingTransactions = async (groupId) => {
-
+  console.log(groupId)
   const group = await groupModel.findById(groupId).exec()
-  console.log(group.expenses)
   const result = calcPending2(group.expenses, group.transfers, group.members)
-  const updatedGroup = await groupModel.findByIdAndUpdate(groupId, { $set: { pendingTransactions: result.pendingTransactions } }, { upsert: true, returnDocument: "after" })
-    .populate({ path: "pendingTransactions", populate: { path: "sender receiver", model: "Users" } })
-    .populate({ path: "members", model: "Users" })
-    .populate({ path: "expenses", populate: { path: "spender", model: "Users" } })
-    .populate({ path: "transfers", populate: { path: "sender receiver", model: "Users" } }).exec()
+  const updatedGroup = await groupModel.findByIdAndUpdate(groupId, { $set: { pendingTransactions: result.pendingTransactions } }, { upsert: true, returnDocument: 'after' })
+    .populate({ path: 'pendingTransactions', populate: { path: 'sender receiver', model: 'Users' } })
+    .populate({ path: 'members', model: 'Users' })
+    .populate({ path: 'expenses', populate: { path: 'spender', model: 'Users' } })
+    .populate({ path: 'transfers', populate: { path: 'sender receiver', model: 'Users' } }).exec()
 
   return (updatedGroup)
 }
@@ -40,10 +41,10 @@ router.post('/updateExpenses', verifyAccessToken, async (req, res) => {
         bulk.push({
           updateOne: {
             'filter': {
-              "_id": groupId,
+              '_id': groupId,
             },
-            'update': { $push: { "expenses.$[elem].participants": { memberId: userId } } },
-            'arrayFilters': [{ "elem._id": toBeUpdatedGroupExpense._id }],
+            'update': { $push: { 'expenses.$[elem].participants': { memberId: userId } } },
+            'arrayFilters': [{ 'elem._id': toBeUpdatedGroupExpense._id }],
             'upsert': true
           },
         })
@@ -54,30 +55,28 @@ router.post('/updateExpenses', verifyAccessToken, async (req, res) => {
   //console.log(bulk)
   const result = await groupModel.bulkWrite(bulk)
     .then(bulkWriteOpResult => {
-      console.log('BULK update OK');
-      console.log(JSON.stringify(bulkWriteOpResult, null, 2));
+      console.log('BULK update OK')
+      // console.log(JSON.stringify(bulkWriteOpResult, null, 2))
     })
     .catch(err => {
-      console.log('BULK update error');
-      console.log(JSON.stringify(err, null, 2));
-    });
+      console.log('BULK update error')
+      // console.log(JSON.stringify(err, null, 2))
+    })
 
   return res.send(await updatePendingTransactions(groupId))
 
 })
 
-
-
 //CREATES EXPENSE REQUEST AND UPDATES EXPENSE AND DESCRIPTION ARRAYS WHEN NEW DATA IS AVAILABLE (deprecated)
 router.post('/addexpense1', verifyAccessToken, async (req, res) => {
 
-  const groupID = toId(req.body.groupID);
-  const amount = req.body.amount;
-  const userID = toId(req.body.userID);
+  const groupID = toId(req.body.groupID)
+  const amount = req.body.amount
+  const userID = toId(req.body.userID)
   const description = req.body.description
 
   if (isNaN(amount) || amount < 0) { //this can be also checked at front end
-    // console.log("amount not a number or amount is negative")
+    // console.log('amount not a number or amount is negative')
     res.sendStatus(403)
     return false
   }
@@ -96,7 +95,7 @@ router.post('/addexpense1', verifyAccessToken, async (req, res) => {
         amount: amount,
         description: description
       })
-      expense.save();
+      expense.save()
 
     } catch (err) {
       console.dir(err)
@@ -111,6 +110,26 @@ router.post('/addexpense1', verifyAccessToken, async (req, res) => {
 })
 
 router.post('/add', verifyAccessToken, async (req, res) => {
+  try {
+    req.body.newExpense.spender = req.queryUserId
+
+    const checkExpenseResult = checkExpense(req.body.newExpense)
+    console.log(checkExpenseResult)
+    if(Array.isArray(checkExpenseResult)) return res.status(200).send({ validationArray: checkExpenseResult })
+    req.body.newExpense.amount = currency(req.body.newExpense.amount).value
+    req.body.newExpense.participants = req.body.newExpense.participants.map(participant => ({ ...participant, contributionAmount: currency(participant.contributionAmount).value }))
+
+    await groupModel.findByIdAndUpdate(req.body.newExpense.groupId, { $push: { expenses: req.body.newExpense } }).exec()
+    const updatedGroup = await updatePendingTransactions(req.body.newExpense.groupId)
+    res.send(updatedGroup)
+  }
+  catch(error) {
+    console.log(error.message)
+    res.status(500).send(error.message)
+  }
+})
+
+router.post('/add2', verifyAccessToken, async (req, res) => {
   const groupId = toId(req.body.groupId)
   const newExpense = {
     splitEqually: req.body.splitEqually,
@@ -132,37 +151,37 @@ router.post('/remove', verifyAccessToken, async (req, res) => {
 })
 
 router.post('/addexpense2', verifyAccessToken, async (req, res) => {
-  const groupID = toId(req.body.groupID);
-  const amount = req.body.amount;
-  // const spenderID = toId(req.body.spenderID);
+  const groupID = toId(req.body.groupID)
+  const amount = req.body.amount
+  // const spenderID = toId(req.body.spenderID)
   const spenderID = jwt.verify(req.accessToken, process.env.ACCESS_TOKEN_SECRET).userId
   const description = req.body.description
 
   if (isNaN(amount) || amount < 0) {
-    // console.log("amount not a number or amount is negative")
+    // console.log('amount not a number or amount is negative')
     res.sendStatus(403)
     return false
   }
   const isDebtorOrOwned = (value) => {
     if (String(value.debtorID) === spenderID || String(value.ownedID) === spenderID) {
-      return value;
+      return value
     }
   }
 
-  let foundExpense = await groupModel.countDocuments({ _id: groupID, "expenses.spender": spenderID }).exec()
-  // console.log("found", foundExpense)
+  let foundExpense = await groupModel.countDocuments({ _id: groupID, 'expenses.spender': spenderID }).exec()
+  // console.log('found', foundExpense)
 
   //https://docs.mongodb.com/manual/reference/operator/update/positional/?fbclid=IwAR36T5C8vItm0PQoqg2XS3PPXUmadtiS9aiZJegrWmQaRqrE_Ry3IJeXEcA
   if (foundExpense) {//if spender has already created expense subdoc, update that one.
     try {
-      await groupModel.updateOne({ _id: groupID, "expenses.spender": spenderID }, { $push: { "expenses.$.amount": amount, "expenses.$.description": description } }).exec()
-      const currentGroup = await groupModel.findOne({ _id: groupID }).exec();
-      const groupExpenses = currentGroup.expenses;
-      const groupTotal = groupExpenses.reduce((prevValue, currValue) => prevValue + currValue.amount.reduce((prevValue, currValue) => prevValue + currValue, 0), 0);
+      await groupModel.updateOne({ _id: groupID, 'expenses.spender': spenderID }, { $push: { 'expenses.$.amount': amount, 'expenses.$.description': description } }).exec()
+      const currentGroup = await groupModel.findOne({ _id: groupID }).exec()
+      const groupExpenses = currentGroup.expenses
+      const groupTotal = groupExpenses.reduce((prevValue, currValue) => prevValue + currValue.amount.reduce((prevValue, currValue) => prevValue + currValue, 0), 0)
       await groupModel.updateOne({ _id: groupID }, { $set: { total: groupTotal } }).exec()
       currentGroup.save()
       //once expense is imported, calculate transactions
-      const expenseArr = await groupModel.findOne({ _id: groupID }).populate({ path: "expenses", populate: { path: "spender", model: "Users" } })
+      const expenseArr = await groupModel.findOne({ _id: groupID }).populate({ path: 'expenses', populate: { path: 'spender', model: 'Users' } })
       const participantArray = expenseArr.expenses
       settlepay.debtCalc3(participantArray)
       const result = settlepay.trackerCalc(participantArray)
@@ -177,14 +196,14 @@ router.post('/addexpense2', verifyAccessToken, async (req, res) => {
   } else { //create expense object in array and push amount and description
     try {
       await groupModel.findByIdAndUpdate(groupID, { $push: { expenses: { spender: spenderID } } }).exec()
-      await groupModel.updateOne({ _id: groupID, "expenses.spender": spenderID }, { $push: { "expenses.$.amount": amount, "expenses.$.description": description } }).exec()
-      const currentGroup = await groupModel.findOne({ _id: groupID }).exec();
-      const groupExpenses = currentGroup.expenses;
-      const groupTotal = groupExpenses.reduce((prevValue, currValue) => prevValue + currValue.amount.reduce((prevValue, currValue) => prevValue + currValue, 0), 0);
+      await groupModel.updateOne({ _id: groupID, 'expenses.spender': spenderID }, { $push: { 'expenses.$.amount': amount, 'expenses.$.description': description } }).exec()
+      const currentGroup = await groupModel.findOne({ _id: groupID }).exec()
+      const groupExpenses = currentGroup.expenses
+      const groupTotal = groupExpenses.reduce((prevValue, currValue) => prevValue + currValue.amount.reduce((prevValue, currValue) => prevValue + currValue, 0), 0)
       await groupModel.updateOne({ _id: groupID }, { $set: { total: groupTotal } }).exec()
       currentGroup.save()
       //once expense is imported, calculate transactions
-      const expenseArr = await groupModel.findOne({ _id: groupID }).populate({ path: "expenses", populate: { path: "spender", model: "Users" } })
+      const expenseArr = await groupModel.findOne({ _id: groupID }).populate({ path: 'expenses', populate: { path: 'spender', model: 'Users' } })
       const participantArray = expenseArr.expenses
       settlepay.debtCalc3(participantArray)
       const result = settlepay.trackerCalc(participantArray)
@@ -204,11 +223,11 @@ router.post('/addtag', verifyAccessToken, async (req, res) => {
   //console.log(req.body.groupId)
   const groupId = toId(req.body.groupId)
   const groupTag = req.body.groupTag
-  const group = await groupModel.findByIdAndUpdate(groupId, { $push: { groupLabels: groupTag } }, { returnDocument: "after" })
-    .populate({ path: "pendingTransactions", populate: { path: "sender receiver", model: "Users" } })
-    .populate({ path: "members", model: "Users" })
-    .populate({ path: "expenses", populate: { path: "spender", model: "Users" } })
-    .populate({ path: "transfers", populate: { path: "sender receiver", model: "Users" } }).exec()
+  const group = await groupModel.findByIdAndUpdate(groupId, { $push: { groupLabels: groupTag } }, { returnDocument: 'after' })
+    .populate({ path: 'pendingTransactions', populate: { path: 'sender receiver', model: 'Users' } })
+    .populate({ path: 'members', model: 'Users' })
+    .populate({ path: 'expenses', populate: { path: 'spender', model: 'Users' } })
+    .populate({ path: 'transfers', populate: { path: 'sender receiver', model: 'Users' } }).exec()
 
   return res.send(group)
 })
@@ -217,11 +236,11 @@ router.post('/deletetag', verifyAccessToken, async (req, res) => {
   const groupId = toId(req.body.groupId)
   const groupTag = req.body.groupTag
   const group = await groupModel
-    .findByIdAndUpdate(groupId, { $pull: { groupLabels: groupTag } }, { returnDocument: "after" })
-    .populate({ path: "pendingTransactions", populate: { path: "sender receiver", model: "Users" } })
-    .populate({ path: "members", model: "Users" })
-    .populate({ path: "expenses", populate: { path: "spender", model: "Users" } })
-    .populate({ path: "transfers", populate: { path: "sender receiver", model: "Users" } }).exec()
+    .findByIdAndUpdate(groupId, { $pull: { groupLabels: groupTag } }, { returnDocument: 'after' })
+    .populate({ path: 'pendingTransactions', populate: { path: 'sender receiver', model: 'Users' } })
+    .populate({ path: 'members', model: 'Users' })
+    .populate({ path: 'expenses', populate: { path: 'spender', model: 'Users' } })
+    .populate({ path: 'transfers', populate: { path: 'sender receiver', model: 'Users' } }).exec()
 
   return res.send(group)
 })
@@ -243,7 +262,7 @@ router.post('/addexpense', verifyAccessToken, async (req, res) => {
     label: label
   }
 
-  console.log(newExpense)
+  // console.log(newExpense)
 
   await groupModel.findByIdAndUpdate(groupId, { $push: { expenses: newExpense } }).exec()
   const group = await updatePendingTransactions(groupId)
@@ -263,7 +282,7 @@ router.post('/addtransfer', verifyAccessToken, async (req, res) => {
   // TODO check if amount has correct format
   const description = req.body.description
 
-  //console.log("shareWith",shareWith)
+  //console.log('shareWith',shareWith)
 
   const newTransfer = {
     sender: sender,
@@ -280,23 +299,23 @@ router.post('/addtransfer', verifyAccessToken, async (req, res) => {
 
 //Gets all expenses on a specific group ID and calculates settlements
 //check settlePayments functions one by one and update variables and you're set.
-router.get("/getgroupexpenses/:groupID", verifyAccessToken, async (req, res) => {
-  const groupID = req.params.groupID;
+router.get('/getgroupexpenses/:groupID', verifyAccessToken, async (req, res) => {
+  const groupID = req.params.groupID
   const userID = jwt.verify(req.accessToken, process.env.ACCESS_TOKEN_SECRET).userId
   const isDebtorOrOwned = (value) => {
     if (String(value.debtorID) === userID || String(value.ownedID) === userID) {
-      return value;
+      return value
     }
   }
 
-  //console.log("groupID", group)
+  //console.log('groupID', group)
   try {
-    const expenseArr = await groupModel.findOne({ _id: groupID }).populate({ path: "expenses", populate: { path: "spender", model: "Users" } })
+    const expenseArr = await groupModel.findOne({ _id: groupID }).populate({ path: 'expenses', populate: { path: 'spender', model: 'Users' } })
     const participantArray = expenseArr.expenses
 
     settlepay.debtCalc3(participantArray)
     const result = settlepay.trackerCalc(participantArray)
-    //console.log("result",result)
+    //console.log('result',result)
     const filteredResult = result.filter(isDebtorOrOwned)
     //console.log(filteredResult)
     res.json(filteredResult)

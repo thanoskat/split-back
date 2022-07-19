@@ -15,9 +15,8 @@ const initWs = () => {
   }
   return newWsServer.Server(options)
 }
-mongoose.connect(
-  process.env.DB_CONNECTION,
-  () => console.log('Connected to DB!'))
+
+mongoose.connect(process.env.DB_CONNECTION,() => console.log('Connected to DB!'))
 
 const authRoute = require('./routes/authRoute')
 const getUsersRoute = require('./routes/getUsersRoute')
