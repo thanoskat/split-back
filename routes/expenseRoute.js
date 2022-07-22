@@ -183,12 +183,17 @@ router.post('/addexpense1', verifyAccessToken, async (req, res) => {
 
 router.post('/add', verifyAccessToken, async (req, res) => {
   try {
-    
-    req.body.newExpense.spender = req.queryUserId
+
+    if (req.body.newExpense.guestId !== 0) {
+      req.body.newExpense.spender = req.body.newExpense.guestId
+    } else {
+      req.body.newExpense.spender = req.queryUserId
+    }
+
 
     const checkExpenseResult = checkExpense(req.body.newExpense)
     console.log(checkExpenseResult)
-    if(Array.isArray(checkExpenseResult)) return res.status(200).send({ validationArray: checkExpenseResult })
+    if (Array.isArray(checkExpenseResult)) return res.status(200).send({ validationArray: checkExpenseResult })
     req.body.newExpense.amount = currency(req.body.newExpense.amount).value
     req.body.newExpense.participants = req.body.newExpense.participants.map(participant => ({ ...participant, contributionAmount: currency(participant.contributionAmount).value }))
 
@@ -196,7 +201,7 @@ router.post('/add', verifyAccessToken, async (req, res) => {
     const updatedGroup = await updatePendingTransactions(req.body.newExpense.groupId)
     res.send(updatedGroup)
   }
-  catch(error) {
+  catch (error) {
     console.log(error.message)
     res.status(500).send(error.message)
   }
