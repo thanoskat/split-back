@@ -7,9 +7,9 @@ const nicknameField = {
   empty: false,
   max: 20,
   messages: {
-    stringEmpty: 'Nickname is required',
-    stringMin: 'Nickname is too short',
-    stringMax: 'Nickname is too long',
+    stringEmpty: 'Name is required',
+    stringMin: 'Name is too short',
+    stringMax: 'Name is too long',
   }
 }
 

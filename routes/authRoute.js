@@ -13,17 +13,18 @@ const { checkSignIn, checkSignUp } = require('../utility/validators')
 const generateAccessToken = require('../utility/generateAccessToken')
 const cookie = require('cookie')
 
+
 router.post('/verify-token', async (req, res) => {
 
   jwt.verify(req.body.token, process.env.MAGICLINK_SECRET, async (error, decoded) => {
-    if(error) {
-      if(error.message === 'jwt expired') {
+    if (error) {
+      if (error.message === 'jwt expired') {
         return res.status(400).send({ message: 'Verification link has expired.' })
       }
-      else if(error.message === 'jwt malformed') {
+      else if (error.message === 'jwt malformed') {
         return res.status(400).send({ message: 'Verification link is invalid. #001' })
       }
-      else if(error.message === 'invalid signature') {
+      else if (error.message === 'invalid signature') {
         return res.status(400).send({ message: 'Verification link is invalid. #002' })
       }
       else {
@@ -32,10 +33,10 @@ router.post('/verify-token', async (req, res) => {
       }
     }
 
-    if(decoded.type === undefined) {
+    if (decoded.type === undefined) {
       return res.status(400).send({ message: 'Verification link is invalid. #003' })
     }
-    else if(decoded.type === 'sign-in') {
+    else if (decoded.type === 'sign-in') {
       try {
         if (await sessionModel.countDocuments({ unique: decoded.unique })) {
           return res.status(400).send({ message: 'This link has already been used.' })
@@ -48,7 +49,7 @@ router.post('/verify-token', async (req, res) => {
           createdAt: Date.now()
         })
         newSession.save((error, savedSession) => {
-          if(error) {
+          if (error) {
             return res.status(500).send({ message: error._message })
           }
           else {
@@ -56,22 +57,23 @@ router.post('/verify-token', async (req, res) => {
           }
         })
       }
-      catch(error) {
+      catch (error) {
         return res.status(500).send(error.message)
       }
     }
-    else if(decoded.type === 'sign-up') {
+    else if (decoded.type === 'sign-up') {
       try {
         if (await userModel.countDocuments({ email: decoded.email })) {
-          return  res.status(400).send({ message: 'There is already an account associated with this email address.' })
+          return res.status(400).send({ message: 'There is already an account associated with this email address.' })
         }
 
         const newUser = new userModel({
           email: decoded.email,
           nickname: decoded.nickname,
+          guest: false
         })
         newUser.save((error, savedUser) => {
-          if(error) {
+          if (error) {
             return res.status(400).send({ message: error._message })
           }
           else {
@@ -83,7 +85,7 @@ router.post('/verify-token', async (req, res) => {
               createdAt: Date.now()
             })
             newSession.save((error, savedSession) => {
-              if(error) {
+              if (error) {
                 return res.status(500).send({ message: error._message })
               }
               else {
@@ -93,7 +95,7 @@ router.post('/verify-token', async (req, res) => {
           }
         })
       }
-      catch(error) {
+      catch (error) {
         return res.status(500).send({ message: error.message })
       }
     }
@@ -110,12 +112,12 @@ router.post('/request-sign-up', async (req, res) => {
       nickname: req.body.nickname,
       email: req.body.email
     })
-    if(Array.isArray(checkSignUpResult)) {
+    if (Array.isArray(checkSignUpResult)) {
       return res.status(400).send(checkSignUpResult)
     }
 
-    if (await userModel.countDocuments({ email: req.body.email })){
-      return  res.status(400).send([
+    if (await userModel.countDocuments({ email: req.body.email })) {
+      return res.status(400).send([
         {
           field: 'email',
           message: 'There is already an account associated with this email address'
@@ -139,36 +141,12 @@ router.post('/request-sign-up', async (req, res) => {
     ))
     return res.status(200).send({ message: `A sign up confirmation email has been sent to ${req.body.email}` })
   }
-  catch(error) {
-    return res.status(500).send({ message: error.message})
-  }
-})
-
-router.post('/signup', async (req, res) => {
-
-  const emailCount = await userModel.countDocuments({ email: req.body.email })
-  if (emailCount) {
-    return res.status(400).json({ message: 'This email already exists' })
-  }
-
-  try {
-    const user = new userModel({
-      nickname: req.body.nickname,
-      email: req.body.email
-    })
-    const savedUser = await user.save()
-    const magicLink = generateMagicLink(savedUser._id.toString())
-    console.log(magicLink)
-    res.send({
-      link: magicLink,
-      message: `An email containing a link has been sent to : ${req.body.email}`
-    })
-  }
   catch (error) {
-    console.log(error.message)
-    res.send(error.message)
+    return res.status(500).send({ message: error.message })
   }
 })
+
+
 
 // router.post('/sendlink', async (req, res) => {
 //   try {
@@ -210,18 +188,18 @@ router.post('/request-sign-in', async (req, res) => {
     email: req.body.email
   })
 
-  if(Array.isArray(checkSignInResult)) {
+  if (Array.isArray(checkSignInResult)) {
     return res.status(400).send(checkSignInResult)
   }
 
   const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress
   const userAgent = req.headers["user-agent"]
   userModel.findOne({ email: req.body.email }, (error, userFound) => {
-    if(error) {
+    if (error) {
       console.log(error._message)
       return res.status(500).send({ message: error._message })
     }
-    if(userFound) {
+    if (userFound) {
       try {
         const { link, unique } = generateSignInConfirmLink(userFound._id.toString())
         emailHandler.sendSignInLink(req.body.email, link, ip, userAgent)
@@ -239,7 +217,7 @@ router.post('/request-sign-in', async (req, res) => {
         ))
         return res.sendStatus(200)
       }
-      catch(error) {
+      catch (error) {
         return res.status(500).send({ message: error.message })
       }
     }
@@ -292,17 +270,17 @@ router.post('/request-sign-in', async (req, res) => {
 
 router.post('/sign-in', async (req, res) => {
   try {
-    if(req.cookies?.unique === undefined) return res.status(400).send({ message: 'Cookie not found. Please try again.' })
+    if (req.cookies?.unique === undefined) return res.status(400).send({ message: 'Cookie not found. Please try again.' })
     const unique = req.cookies.unique
 
     //  DO NOT DELETE
     // const session = await sessionModel.findOneAndUpdate({ unique: unique }, { $unset: { unique: unique }}).exec()
     const session = await sessionModel.findOne({ unique: unique }).exec()
-    if(!session) return res.status(401).send({ message: 'Click the link in your email before you continue.' })
+    if (!session) return res.status(401).send({ message: 'Click the link in your email before you continue.' })
 
     const accessToken = generateAccessToken(session.userId)
     const user = await userModel.findById(session.userId).exec()
-    if(!user) return res.status(500).send({ message: 'User not found. Authentication failed.' })
+    if (!user) return res.status(500).send({ message: 'User not found. Authentication failed.' })
 
     res.setHeader('Set-Cookie', cookie.serialize(
       'refreshToken',
@@ -332,8 +310,8 @@ router.post('/sign-in', async (req, res) => {
       }
     })
   }
-  catch(error) {
-    return res.status(500).send({ message: error.message})
+  catch (error) {
+    return res.status(500).send({ message: error.message })
   }
 })
 

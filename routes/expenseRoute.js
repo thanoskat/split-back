@@ -10,6 +10,7 @@ const settlepay = require('../utility/settlePayments')
 const calcPending2 = require('../utility/calcPending2')
 const { checkExpense } = require('../utility/validators')
 const currency = require('currency.js')
+const { checkSignUp } = require('../utility/validators')
 
 const updatePendingTransactions = async (groupId) => {
   console.log(groupId)
@@ -34,7 +35,7 @@ router.post('/updateExpenses', verifyAccessToken, async (req, res) => {
   const toBeUpdatedGroup = await groupModel.findById(groupId)
 
   const bulk = []
-  //we need a check to avoid duplecate entrance just in case
+  //we need a check to avoid duplicate entrance just in case
   toBeupdatedExpenses.map((toBeupdatedExpense) => {
     toBeUpdatedGroup.expenses.map((toBeUpdatedGroupExpense) => {
       if (toId(toBeupdatedExpense._id).equals(toBeUpdatedGroupExpense._id)) {
@@ -67,6 +68,77 @@ router.post('/updateExpenses', verifyAccessToken, async (req, res) => {
 
 })
 
+router.post('/addguest', async (req, res) => {
+
+  const checkSignUpResult = checkSignUp({
+    nickname: req.body.nickname,
+    email: req.body.email
+  })
+  if (Array.isArray(checkSignUpResult)) {
+    return res.status(400).send(checkSignUpResult)
+  }
+
+  const emailCount = await userModel.countDocuments({ email: req.body.email })
+  if (emailCount) {
+    return res.status(400).json({ message: 'This email already exists' })
+  }
+
+  try {
+    const user = new userModel({
+      nickname: req.body.nickname,
+      email: req.body.email,
+      guest: true
+    })
+    await user.save()
+    //console.log(user)
+
+    const groupDoc = await groupModel.findOneAndUpdate(
+      { _id: req.body.groupID, 'members': { $ne: user._id } },
+      { $addToSet: { members: user._id } }
+    )
+
+    if (!groupDoc) return res.status(409).send('Member already exists in group')
+    //res.status(200).send(groupDoc)
+
+    const userDoc = await userModel.findOneAndUpdate(
+      { _id: user._id, 'groups': { $ne: req.body.groupID } },
+      { $addToSet: { groups: req.body.groupID } }
+    )
+    if (!userDoc) return res.status(409).send('Group already exists in user')
+
+
+    //updateExpenses logic goes here
+
+    const toBeupdatedExpenses = req.body.toBeupdatedExpenses
+    const toBeUpdatedGroup = await groupModel.findById(req.body.groupID)
+    const bulk = []
+    //we need a check to avoid duplicate entrance just in case
+    toBeupdatedExpenses.map((toBeupdatedExpense) => {
+      toBeUpdatedGroup.expenses.map((toBeUpdatedGroupExpense) => {
+        if (toId(toBeupdatedExpense._id).equals(toBeUpdatedGroupExpense._id)) {
+          bulk.push({
+            updateOne: {
+              'filter': {
+                '_id': req.body.groupID,
+              },
+              'update': { $push: { 'expenses.$[elem].participants': { memberId: user._id } } },
+              'arrayFilters': [{ 'elem._id': toBeUpdatedGroupExpense._id }],
+              'upsert': true
+            },
+          })
+        }
+      })
+    })
+
+    await groupModel.bulkWrite(bulk)
+    return res.send(await updatePendingTransactions(req.body.groupID))
+  }
+  catch (error) {
+    console.log(error.message)
+    res.send(error.message)
+  }
+  //return res.status(200).send(groupDoc)
+})
 //CREATES EXPENSE REQUEST AND UPDATES EXPENSE AND DESCRIPTION ARRAYS WHEN NEW DATA IS AVAILABLE (deprecated)
 router.post('/addexpense1', verifyAccessToken, async (req, res) => {
 
@@ -111,6 +183,7 @@ router.post('/addexpense1', verifyAccessToken, async (req, res) => {
 
 router.post('/add', verifyAccessToken, async (req, res) => {
   try {
+    
     req.body.newExpense.spender = req.queryUserId
 
     const checkExpenseResult = checkExpense(req.body.newExpense)

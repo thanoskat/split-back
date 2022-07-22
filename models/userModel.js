@@ -9,12 +9,16 @@ const emailUnique = async (email) => {
 const userSchema = new mongoose.Schema({
   nickname: {
     type: String,
-    required: [true, "Nickname is required"],
-    minLength: [6, "{VALUE} is a short nickname"]
+    required: [true, "Name is required"],
+    minLength: [1, "{VALUE} is a short nickname"]
+  },
+  guest: {
+    type: Boolean,
+    required: true
   },
   email: {
     type: String,
-    required: [true, "Email is required"],
+    required: [function() { return this.guest === false; }, "Email is required"],
     maxLength: 255,
     validate: [
 
@@ -22,6 +26,7 @@ const userSchema = new mongoose.Schema({
       { validator: isEmail, message: "{VALUE} is not valid" }
     ]
   },
+  
   date: {
     type: Date,
     default: Date.now
