@@ -183,14 +183,7 @@ router.post('/addexpense1', verifyAccessToken, async (req, res) => {
 
 router.post('/add', verifyAccessToken, async (req, res) => {
   try {
-
-    if (req.body.newExpense.guestId !== 0) {
-      req.body.newExpense.spender = req.body.newExpense.guestId
-    } else {
-      req.body.newExpense.spender = req.queryUserId
-    }
-
-
+    req.body.newExpense.spender = req.body.newExpense.spender
     const checkExpenseResult = checkExpense(req.body.newExpense)
     console.log(checkExpenseResult)
     if (Array.isArray(checkExpenseResult)) return res.status(200).send({ validationArray: checkExpenseResult })
@@ -206,6 +199,34 @@ router.post('/add', verifyAccessToken, async (req, res) => {
     res.status(500).send(error.message)
   }
 })
+
+router.post('/addtransfer', verifyAccessToken, async (req, res) => {
+  // const user = jwt.verify(req.accessToken, process.env.ACCESS_TOKEN_SECRET).userId
+  const groupId = toId(req.body.groupId)
+  // TODO check if user belongs to group
+  const sender = toId(req.body.sender)
+  // not null anymore
+  const receiver = toId(req.body.receiver)
+
+  // TODO check if receiver belongs to group
+  const amount = req.body.amount
+  // TODO check if amount has correct format
+  const description = req.body.description
+
+  //console.log('shareWith',shareWith)
+
+  const newTransfer = {
+    sender: sender,
+    receiver: receiver,
+    amount: amount,
+    description: description
+  }
+
+  await groupModel.findByIdAndUpdate(groupId, { $push: { transfers: newTransfer } }).exec()
+  const group = await updatePendingTransactions(groupId)
+  return res.send(group)
+})
+
 
 router.post('/add2', verifyAccessToken, async (req, res) => {
   const groupId = toId(req.body.groupId)
@@ -347,32 +368,6 @@ router.post('/addexpense', verifyAccessToken, async (req, res) => {
   return res.send(group)
 })
 
-router.post('/addtransfer', verifyAccessToken, async (req, res) => {
-  // const user = jwt.verify(req.accessToken, process.env.ACCESS_TOKEN_SECRET).userId
-  const groupId = toId(req.body.groupId)
-  // TODO check if user belongs to group
-  const sender = toId(req.body.sender)
-  // not null anymore
-  const receiver = toId(req.body.receiver)
-
-  // TODO check if receiver belongs to group
-  const amount = req.body.amount
-  // TODO check if amount has correct format
-  const description = req.body.description
-
-  //console.log('shareWith',shareWith)
-
-  const newTransfer = {
-    sender: sender,
-    receiver: receiver,
-    amount: amount,
-    description: description
-  }
-
-  await groupModel.findByIdAndUpdate(groupId, { $push: { transfers: newTransfer } }).exec()
-  const group = await updatePendingTransactions(groupId)
-  return res.send(group)
-})
 
 
 //Gets all expenses on a specific group ID and calculates settlements
