@@ -7,9 +7,9 @@ const nicknameField = {
   empty: false,
   max: 20,
   messages: {
-    stringEmpty: 'Nickname is required',
-    stringMin: 'Nickname is too short',
-    stringMax: 'Nickname is too long',
+    stringEmpty: 'Name is required',
+    stringMin: 'Name is too short',
+    stringMax: 'Name is too long',
   }
 }
 
@@ -50,6 +50,10 @@ const objectID = {
   type: 'string',
   length: 24,
   hex: true,
+  empty: false,
+  messages: {
+    stringEmpty: 'A payee should be selected'
+  }
 }
 
 const checkExpense = (expense) => {
@@ -81,7 +85,7 @@ const checkExpense = (expense) => {
       empty: false,
       numeric: true,
       custom: (value, errors) => {
-        if(currency(value).value <= 0) {
+        if (currency(value).value <= 0) {
           errors.push({
             type: 'amountPositive',
           })
@@ -113,8 +117,8 @@ const checkExpense = (expense) => {
             // empty: false,
             // numeric: true,
             custom: (value, errors, schema, name, parent, context) => {
-              if(!context.data.splitEqually) {
-                if(currency(value).value <= 0) {
+              if (!context.data.splitEqually) {
+                if (currency(value).value <= 0) {
                   errors.push({
                     type: 'amountPositive',
                   })
