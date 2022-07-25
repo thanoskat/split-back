@@ -8,7 +8,7 @@ const verifyAccessToken = require('../middleware/verifyAccessToken')
 const jwt = require('jsonwebtoken')
 const settlepay = require('../utility/settlePayments')
 const calcPending2 = require('../utility/calcPending2')
-const { checkExpense } = require('../utility/validators')
+const { checkExpense, checkTransfer } = require('../utility/validators')
 const currency = require('currency.js')
 const { checkSignUp } = require('../utility/validators')
 
@@ -204,9 +204,9 @@ router.post('/addtransfer', verifyAccessToken, async (req, res) => {
   // const user = jwt.verify(req.accessToken, process.env.ACCESS_TOKEN_SECRET).userId
   const groupId = toId(req.body.groupId)
   // TODO check if user belongs to group
-  const sender = toId(req.body.sender)
+  const sender = (req.body.sender)
   // not null anymore
-  const receiver = toId(req.body.receiver)
+  const receiver = (req.body.receiver)
 
   // TODO check if receiver belongs to group
   const amount = req.body.amount
@@ -221,6 +221,14 @@ router.post('/addtransfer', verifyAccessToken, async (req, res) => {
     amount: amount,
     description: description
   }
+
+  console.log(newTransfer)
+  const checkTransferResult = checkTransfer(newTransfer)
+  console.log(checkTransferResult)
+  if (Array.isArray(checkTransferResult)) return res.status(200).send({ validationArray: checkTransferResult })
+  newTransfer.receiver = toId(newTransfer.receiver)
+  newTransfer.sender = toId(newTransfer.sender)
+  newTransfer.amount = currency(newTransfer.amount).value
 
   await groupModel.findByIdAndUpdate(groupId, { $push: { transfers: newTransfer } }).exec()
   const group = await updatePendingTransactions(groupId)
