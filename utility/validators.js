@@ -52,7 +52,7 @@ const objectID = {
   hex: true,
   empty: false,
   messages: {
-    stringEmpty: 'A payee should be selected'
+    stringEmpty: 'A payer should be selected'
   }
 }
 
