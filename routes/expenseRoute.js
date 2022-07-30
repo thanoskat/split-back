@@ -10,7 +10,7 @@ const settlepay = require('../utility/settlePayments')
 const calcPending2 = require('../utility/calcPending2')
 const { checkExpense, checkTransfer } = require('../utility/validators')
 const currency = require('currency.js')
-const { checkSignUp } = require('../utility/validators')
+const { checkGuest } = require('../utility/validators')
 
 const updatePendingTransactions = async (groupId) => {
   console.log(groupId)
@@ -70,23 +70,24 @@ router.post('/updateExpenses', verifyAccessToken, async (req, res) => {
 
 router.post('/addguest', async (req, res) => {
 
-  const checkSignUpResult = checkSignUp({
+  const checkSignUpResult = checkGuest({
     nickname: req.body.nickname,
-    email: req.body.email
+    // email: req.body.email
   })
+
   if (Array.isArray(checkSignUpResult)) {
     return res.status(400).send(checkSignUpResult)
   }
 
-  const emailCount = await userModel.countDocuments({ email: req.body.email })
-  if (emailCount) {
-    return res.status(400).json({ message: 'This email already exists' })
-  }
+  // const emailCount = await userModel.countDocuments({ email: req.body.email })
+  // if (emailCount) {
+  //   return res.status(400).json({ message: 'This email already exists' })
+  // }
 
   try {
     const user = new userModel({
       nickname: req.body.nickname,
-      email: req.body.email,
+      // email: req.body.email,
       guest: true
     })
     await user.save()
@@ -139,6 +140,8 @@ router.post('/addguest', async (req, res) => {
   }
   //return res.status(200).send(groupDoc)
 })
+
+
 //CREATES EXPENSE REQUEST AND UPDATES EXPENSE AND DESCRIPTION ARRAYS WHEN NEW DATA IS AVAILABLE (deprecated)
 router.post('/addexpense1', verifyAccessToken, async (req, res) => {
 

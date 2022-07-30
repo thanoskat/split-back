@@ -35,6 +35,17 @@ const checkSignUp = (signUpForm) => {
   })
 }
 
+const checkGuest = (signUpForm) => {
+  const v = new Validator()
+  const schema = {
+    nickname: nicknameField,
+  }
+  const check = v.compile(schema)
+  return check({
+    nickname: signUpForm.nickname,
+  })
+}
+
 const checkSignIn = (signInForm) => {
   const v = new Validator()
   const schema = {
@@ -217,5 +228,6 @@ module.exports = {
   checkSignIn,
   checkSignUp,
   checkExpense,
-  checkTransfer
+  checkTransfer,
+  checkGuest
 }
