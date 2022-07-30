@@ -8,9 +8,9 @@ const verifyAccessToken = require('../middleware/verifyAccessToken')
 const jwt = require('jsonwebtoken')
 const settlepay = require('../utility/settlePayments')
 const calcPending2 = require('../utility/calcPending2')
-const { checkExpense } = require('../utility/validators')
+const { checkExpense, checkTransfer } = require('../utility/validators')
 const currency = require('currency.js')
-const { checkSignUp } = require('../utility/validators')
+const { checkGuest } = require('../utility/validators')
 
 const updatePendingTransactions = async (groupId) => {
   console.log(groupId)
@@ -70,23 +70,24 @@ router.post('/updateExpenses', verifyAccessToken, async (req, res) => {
 
 router.post('/addguest', async (req, res) => {
 
-  const checkSignUpResult = checkSignUp({
+  const checkSignUpResult = checkGuest({
     nickname: req.body.nickname,
-    email: req.body.email
+    // email: req.body.email
   })
+
   if (Array.isArray(checkSignUpResult)) {
     return res.status(400).send(checkSignUpResult)
   }
 
-  const emailCount = await userModel.countDocuments({ email: req.body.email })
-  if (emailCount) {
-    return res.status(400).json({ message: 'This email already exists' })
-  }
+  // const emailCount = await userModel.countDocuments({ email: req.body.email })
+  // if (emailCount) {
+  //   return res.status(400).json({ message: 'This email already exists' })
+  // }
 
   try {
     const user = new userModel({
       nickname: req.body.nickname,
-      email: req.body.email,
+      // email: req.body.email,
       guest: true
     })
     await user.save()
@@ -139,6 +140,8 @@ router.post('/addguest', async (req, res) => {
   }
   //return res.status(200).send(groupDoc)
 })
+
+
 //CREATES EXPENSE REQUEST AND UPDATES EXPENSE AND DESCRIPTION ARRAYS WHEN NEW DATA IS AVAILABLE (deprecated)
 router.post('/addexpense1', verifyAccessToken, async (req, res) => {
 
@@ -204,9 +207,9 @@ router.post('/addtransfer', verifyAccessToken, async (req, res) => {
   // const user = jwt.verify(req.accessToken, process.env.ACCESS_TOKEN_SECRET).userId
   const groupId = toId(req.body.groupId)
   // TODO check if user belongs to group
-  const sender = toId(req.body.sender)
+  const sender = (req.body.sender)
   // not null anymore
-  const receiver = toId(req.body.receiver)
+  const receiver = (req.body.receiver)
 
   // TODO check if receiver belongs to group
   const amount = req.body.amount
@@ -221,6 +224,14 @@ router.post('/addtransfer', verifyAccessToken, async (req, res) => {
     amount: amount,
     description: description
   }
+
+  console.log(newTransfer)
+  const checkTransferResult = checkTransfer(newTransfer)
+  console.log(checkTransferResult)
+  if (Array.isArray(checkTransferResult)) return res.status(200).send({ validationArray: checkTransferResult })
+  newTransfer.receiver = toId(newTransfer.receiver)
+  newTransfer.sender = toId(newTransfer.sender)
+  newTransfer.amount = currency(newTransfer.amount).value
 
   await groupModel.findByIdAndUpdate(groupId, { $push: { transfers: newTransfer } }).exec()
   const group = await updatePendingTransactions(groupId)

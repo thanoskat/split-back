@@ -35,6 +35,17 @@ const checkSignUp = (signUpForm) => {
   })
 }
 
+const checkGuest = (signUpForm) => {
+  const v = new Validator()
+  const schema = {
+    nickname: nicknameField,
+  }
+  const check = v.compile(schema)
+  return check({
+    nickname: signUpForm.nickname,
+  })
+}
+
 const checkSignIn = (signInForm) => {
   const v = new Validator()
   const schema = {
@@ -52,8 +63,78 @@ const objectID = {
   hex: true,
   empty: false,
   messages: {
-    stringEmpty: 'A payee should be selected'
+    stringEmpty: 'A payer should be selected'
   }
+}
+
+
+
+const checkTransfer = (transfer) => {
+  const v = new Validator({
+    useNewCustomCheckerFunction: true,
+    messages: {
+      samePayerPayeeID: 'You can\'t transfer to the same account',
+      amountPositive: 'Amount must be greater than zero'
+    }
+  })
+
+  const schema = {
+    amount: {
+      type: 'string',
+      empty: false,
+      numeric: true,
+      custom: (value, errors) => {
+        if (currency(value).value <= 0) {
+          errors.push({
+            type: 'amountPositive',
+          })
+        }
+        return value
+      },
+      messages: {
+        stringEmpty: 'Amount is required',
+        stringNumeric: 'Amount must be a number',
+        number: 'Amount must be a number',
+      }
+    },
+    sender: {
+      type: 'string',
+      length: 24,
+      hex: true,
+      empty: false,
+      custom: (value, errors, schema, name, parent, context) => {
+        if (context.data.receiver === context.data.sender) {
+          errors.push({
+            type: 'samePayerPayeeID',
+          })
+        }
+        return value
+      },
+      messages: {
+        stringEmpty: 'A payer should be selected'
+      }
+    },
+    receiver: {
+      type: 'string',
+      length: 24,
+      hex: true,
+      empty: false,
+      custom: (value, errors, schema, name, parent, context) => {
+        if (context.data.receiver === context.data.sender) {
+          errors.push({
+            type: 'samePayerPayeeID',
+          })
+        }
+        return value
+      },
+      messages: {
+        stringEmpty: 'A receiver should be selected'
+      }
+    },
+  }
+
+  const check = v.compile(schema)
+  return check(transfer)
 }
 
 const checkExpense = (expense) => {
@@ -147,4 +228,6 @@ module.exports = {
   checkSignIn,
   checkSignUp,
   checkExpense,
+  checkTransfer,
+  checkGuest
 }
