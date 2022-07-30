@@ -203,6 +203,28 @@ router.post('/add', verifyAccessToken, async (req, res) => {
   }
 })
 
+router.post('/edit', verifyAccessToken, async (req, res) => {
+  try {
+    req.body.newExpense.spender = req.body.newExpense.spender
+    const checkExpenseResult = checkExpense(req.body.newExpense)
+    console.log(checkExpenseResult)
+    if (Array.isArray(checkExpenseResult)) return res.status(200).send({ validationArray: checkExpenseResult })
+    req.body.newExpense.amount = currency(req.body.newExpense.amount).value
+    req.body.newExpense.participants = req.body.newExpense.participants.map(participant => ({ ...participant, contributionAmount: currency(participant.contributionAmount).value }))
+
+    await groupModel.findOneAndUpdate(
+      { _id: req.body.newExpense.groupId, expenses: { $elemMatch: { _id: req.body.newExpense._id } }  },
+      { 'expenses.$': req.body.newExpense },
+      { }).exec()
+    const updatedGroup = await updatePendingTransactions(req.body.newExpense.groupId)
+    res.send(updatedGroup)
+  }
+  catch (error) {
+    console.log(error.message)
+    res.status(500).send(error.message)
+  }
+})
+
 router.post('/addtransfer', verifyAccessToken, async (req, res) => {
   // const user = jwt.verify(req.accessToken, process.env.ACCESS_TOKEN_SECRET).userId
   const groupId = toId(req.body.groupId)
@@ -257,6 +279,12 @@ router.post('/add2', verifyAccessToken, async (req, res) => {
 router.post('/remove', verifyAccessToken, async (req, res) => {
   const groupId = toId(req.body.groupId)
   await groupModel.findByIdAndUpdate(groupId, { $pull: { expenses: { _id: toId(req.body.expenseId) } } }).exec()
+  return res.send(await updatePendingTransactions(groupId))
+})
+
+router.post('/removetransfer', verifyAccessToken, async (req, res) => {
+  const groupId = toId(req.body.groupId)
+  await groupModel.findByIdAndUpdate(groupId, { $pull: { transfers: { _id: toId(req.body.transferId) } } }).exec()
   return res.send(await updatePendingTransactions(groupId))
 })
 

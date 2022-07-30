@@ -278,7 +278,7 @@ router.delete('/deletegroup/:groupID', async (req, res) => {
   }
 })
 
-router.post('/deletegroup', verifyAccessToken, async (req, res) => {
+router.post('/remove', verifyAccessToken, async (req, res) => {
   const groupId = (toId(req.body.groupId))
   try {
     await userModel.updateMany(

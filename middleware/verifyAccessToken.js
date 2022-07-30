@@ -16,10 +16,11 @@ const verifyAccessToken = (req, res, next) =>{
     next()
   }
   catch(error) {
-    if(error.name == "TokenExpiredError"){
+    console.log(error.message)
+    if(error.name == "TokenExpiredError") {
       res.status(401).send(`Access token expired ${Math.trunc(expInSeconds)*-1}s ago.`)
     }
-    else{
+    else {
       res.status(401).send(error.message)
     }
   }
