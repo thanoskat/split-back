@@ -1,6 +1,6 @@
 const currency = require('currency.js')
 
-const calcPending2 = (expenses, transfers, members) => {
+const calcPending3 = (expenses, transfers, members) => {
 
   // Initialize spenders array with 0 balances and 0 for the personalized array of money to equilibrium
   const spenders = []
@@ -20,23 +20,7 @@ const calcPending2 = (expenses, transfers, members) => {
   expenses.map(expense => {
 
     totalSpent = totalSpent.add(expense.amount)
-
-    if (expense.splitEqually) {
-      //divide expense over the number of people who will share
-      const distributedAmountArray = currency(expense.amount)
-      .distribute(expense.participants.length)
-      console.log(distributedAmountArray)
-
-      expense.participants.map((shareObject, index) => {
-        spenders.map(spender => {
-          if (spender.id.toString() === shareObject.memberId.toString()) {
-            spender.moneySummedAndDistributed = currency(spender.moneySummedAndDistributed)
-              .add(distributedAmountArray[index])
-          }
-        })
-      })
-
-    } else {
+    
       //check if expense amount is equal to add of contribution amounts
       let totalAmountCheck
        expense.participants.map((shareObject)=>{
@@ -52,7 +36,7 @@ const calcPending2 = (expenses, transfers, members) => {
           }
         })
       })
-    }
+    
 
     // Loop spenders and adjust balances for each expense
     spenders.map(spender => {
@@ -143,4 +127,4 @@ const calcPending2 = (expenses, transfers, members) => {
   })
 }
 
-module.exports = calcPending2
+module.exports = calcPending3
