@@ -11,6 +11,7 @@ const calcPending3 = require('../utility/calcPending3')
 const { checkExpense, checkTransfer } = require('../utility/validators')
 const currency = require('currency.js')
 const { checkGuest } = require('../utility/validators')
+const { text } = require('body-parser')
 
 const updatePendingTransactions = async (groupId) => {
   console.log(groupId)
@@ -240,17 +241,32 @@ router.post('/txhistory', verifyAccessToken, async (req, res) => {
         return
       }
     })
-    
+
+    history.sort((a, b) => {
+      return a.date - b.date
+    })
+
+    history[0].totalLent = history[0].lent
+    history[0].totalBorrowed = history[0].borrowed
+    history[0].balance = currency(history[0].lent).subtract(history[0].borrowed)
+
+    history[1].totalLent = currency(history[0].lent).add(history[1].lent)
+    history[1].totalBorrowed = currency(history[0].borrowed).add(history[1].borrowed)
+    history[1].balance = currency(history[1].totalLent).subtract(history[1].totalBorrowed) 
+
+    for (let i = 2; i < history.length; i++) {
+      history[i].totalLent = currency(history[i - 1].totalLent).add(history[i].lent)
+      history[i].totalBorrowed = currency(history[i - 1].totalBorrowed).add(history[i].borrowed)
+      history[i].balane = currency(history[i].totalLent).subtract(history[i].totalBorrowed)
+    }
+
     res.send(history)
   } catch (err) {
     res.sendStatus(500)
   }
 })
 
-//[
-//{date:12/05/2022, lent:15, borrowed:0, totalLent: , totalBorrowed:, balance: }
-//{date:13/05/2022, lent:0, borrowed:20, totalLent: , totalBorrowed:, balance: }
-//]
+
 router.post('/edit', verifyAccessToken, async (req, res) => {
   try {
     req.body.newExpense.spender = req.body.newExpense.spender
