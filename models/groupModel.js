@@ -45,6 +45,10 @@ const groupSchema = mongoose.Schema({
       type: Date,
       default: Date.now
     },
+    includeNewMemberToThisExpense: {
+      type: Boolean,
+      required: false
+    }
   }],
   transfers: [{
     sender: {

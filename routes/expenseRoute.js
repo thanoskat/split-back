@@ -40,12 +40,20 @@ router.post('/updateExpenses', verifyAccessToken, async (req, res) => {
   toBeupdatedExpenses.map((toBeupdatedExpense) => {
     toBeUpdatedGroup.expenses.map((toBeUpdatedGroupExpense) => {
       if (toId(toBeupdatedExpense._id).equals(toBeUpdatedGroupExpense._id)) {
+
+        const distributedAmountArray = currency(toBeupdatedExpense.amount)
+          .distribute(toBeupdatedExpense.participants.length + 1).map(e => e.value)
+        const newParticipantArr = toBeupdatedExpense.participants.map((participant, index) => (
+          { ...participant, contributionAmount: distributedAmountArray[index] }
+        ))
+        newParticipantArr.push({ memberId: userId.toString(), contributionAmount: distributedAmountArray[distributedAmountArray.length - 1] })
         bulk.push({
           updateOne: {
             'filter': {
               '_id': groupId,
             },
-            'update': { $push: { 'expenses.$[elem].participants': { memberId: userId } } },
+            // 'update': { $push: { 'expenses.$[elem].participants': { memberId: userId } } },
+            'update': { $set: { 'expenses.$[elem].participants': newParticipantArr } },
             'arrayFilters': [{ 'elem._id': toBeUpdatedGroupExpense._id }],
             'upsert': true
           },
@@ -54,7 +62,7 @@ router.post('/updateExpenses', verifyAccessToken, async (req, res) => {
     })
   })
 
-  //console.log(bulk)
+  console.log("bulk", bulk)
   const result = await groupModel.bulkWrite(bulk)
     .then(bulkWriteOpResult => {
       console.log('BULK update OK')
@@ -118,19 +126,30 @@ router.post('/addguest', async (req, res) => {
     toBeupdatedExpenses.map((toBeupdatedExpense) => {
       toBeUpdatedGroup.expenses.map((toBeUpdatedGroupExpense) => {
         if (toId(toBeupdatedExpense._id).equals(toBeUpdatedGroupExpense._id)) {
+          const distributedAmountArray = currency(toBeupdatedExpense.amount)
+            .distribute(toBeupdatedExpense.participants.length + 1).map(e => e.value)
+          const newParticipantArr = toBeupdatedExpense.participants.map((participant, index) => (
+            { ...participant, contributionAmount: distributedAmountArray[index] }
+          ))
+          newParticipantArr.push({ memberId: user._id.toString(), contributionAmount: distributedAmountArray[distributedAmountArray.length - 1] })
+
           bulk.push({
             updateOne: {
               'filter': {
                 '_id': req.body.groupID,
               },
-              'update': { $push: { 'expenses.$[elem].participants': { memberId: user._id } } },
+              //'update': { $set: { 'expenses.$[elem].participants': { memberId: user._id } } },
+              'update': { $set: { 'expenses.$[elem].participants': newParticipantArr } },
               'arrayFilters': [{ 'elem._id': toBeUpdatedGroupExpense._id }],
               'upsert': true
             },
           })
+
         }
       })
     })
+
+    console.log("bulk", bulk)
 
     await groupModel.bulkWrite(bulk)
     return res.send(await updatePendingTransactions(req.body.groupID))
@@ -185,31 +204,6 @@ router.post('/addexpense1', verifyAccessToken, async (req, res) => {
   }
 })
 
-router.post('/add', verifyAccessToken, async (req, res) => {
-  try {
-    req.body.newExpense.spender = req.body.newExpense.spender
-    const checkExpenseResult = checkExpense(req.body.newExpense)
-    console.log(checkExpenseResult)
-    if (Array.isArray(checkExpenseResult)) return res.status(200).send({ validationArray: checkExpenseResult })
-    req.body.newExpense.amount = currency(req.body.newExpense.amount).value
-    if (req.body.newExpense.splitEqually === false) {
-      req.body.newExpense.participants = req.body.newExpense.participants.map(participant => ({ ...participant, contributionAmount: currency(participant.contributionAmount).value }))
-    } else {
-      const distributedAmountArray = currency(req.body.newExpense.amount)
-        .distribute(req.body.newExpense.participants.length).map(e => e.value)
-      req.body.newExpense.participants = req.body.newExpense.participants.map((participant, index) => ({ ...participant, contributionAmount: distributedAmountArray[index] }))
-    }
-
-
-    await groupModel.findByIdAndUpdate(req.body.newExpense.groupId, { $push: { expenses: req.body.newExpense } }).exec()
-    const updatedGroup = await updatePendingTransactions(req.body.newExpense.groupId)
-    res.send(updatedGroup)
-  }
-  catch (error) {
-    console.log(error.message)
-    res.status(500).send(error.message)
-  }
-})
 
 router.post('/txhistory', verifyAccessToken, async (req, res) => {
   const userId = toId(req.queryUserId)
@@ -252,7 +246,7 @@ router.post('/txhistory', verifyAccessToken, async (req, res) => {
 
     history[1].totalLent = currency(history[0].lent).add(history[1].lent)
     history[1].totalBorrowed = currency(history[0].borrowed).add(history[1].borrowed)
-    history[1].balance = currency(history[1].totalLent).subtract(history[1].totalBorrowed) 
+    history[1].balance = currency(history[1].totalLent).subtract(history[1].totalBorrowed)
 
     for (let i = 2; i < history.length; i++) {
       history[i].totalLent = currency(history[i - 1].totalLent).add(history[i].lent)
@@ -266,6 +260,31 @@ router.post('/txhistory', verifyAccessToken, async (req, res) => {
   }
 })
 
+router.post('/add', verifyAccessToken, async (req, res) => {
+  try {
+    req.body.newExpense.spender = req.body.newExpense.spender
+    const checkExpenseResult = checkExpense(req.body.newExpense)
+    console.log(checkExpenseResult)
+    if (Array.isArray(checkExpenseResult)) return res.status(200).send({ validationArray: checkExpenseResult })
+    req.body.newExpense.amount = currency(req.body.newExpense.amount).value
+    if (req.body.newExpense.splitEqually === false) {
+      req.body.newExpense.participants = req.body.newExpense.participants.map(participant => ({ ...participant, contributionAmount: currency(participant.contributionAmount).value }))
+    } else {
+      const distributedAmountArray = currency(req.body.newExpense.amount)
+        .distribute(req.body.newExpense.participants.length).map(e => e.value)
+      req.body.newExpense.participants = req.body.newExpense.participants.map((participant, index) => ({ ...participant, contributionAmount: distributedAmountArray[index] }))
+    }
+
+
+    await groupModel.findByIdAndUpdate(req.body.newExpense.groupId, { $push: { expenses: req.body.newExpense } }).exec()
+    const updatedGroup = await updatePendingTransactions(req.body.newExpense.groupId)
+    res.send(updatedGroup)
+  }
+  catch (error) {
+    console.log(error.message)
+    res.status(500).send(error.message)
+  }
+})
 
 router.post('/edit', verifyAccessToken, async (req, res) => {
   try {
@@ -274,7 +293,14 @@ router.post('/edit', verifyAccessToken, async (req, res) => {
     console.log(checkExpenseResult)
     if (Array.isArray(checkExpenseResult)) return res.status(200).send({ validationArray: checkExpenseResult })
     req.body.newExpense.amount = currency(req.body.newExpense.amount).value
-    req.body.newExpense.participants = req.body.newExpense.participants.map(participant => ({ ...participant, contributionAmount: currency(participant.contributionAmount).value }))
+
+    if (req.body.newExpense.splitEqually === false) {
+      req.body.newExpense.participants = req.body.newExpense.participants.map(participant => ({ ...participant, contributionAmount: currency(participant.contributionAmount).value }))
+    } else {
+      const distributedAmountArray = currency(req.body.newExpense.amount)
+        .distribute(req.body.newExpense.participants.length).map(e => e.value)
+      req.body.newExpense.participants = req.body.newExpense.participants.map((participant, index) => ({ ...participant, contributionAmount: distributedAmountArray[index] }))
+    }
 
     await groupModel.findOneAndUpdate(
       { _id: req.body.newExpense.groupId, expenses: { $elemMatch: { _id: req.body.newExpense._id } } },
