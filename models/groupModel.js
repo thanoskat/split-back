@@ -15,10 +15,24 @@ const groupSchema = mongoose.Schema({
       type: Boolean,
       required: true
     },
-    spender: {
+    paidByMany: {
+      type: Boolean,
+      required: true
+    },
+    spender:{
       type: mongoose.Types.ObjectId, ref: 'Users',
       required: true
     },
+    spenders: [{
+      spenderId: {
+        type: mongoose.Types.ObjectId, ref: 'Users',
+        required: false
+      },
+      spenderAmount: {
+        type: Number,
+        required: true
+      }
+    }],
     amount: {
       type: Number,
       required: true

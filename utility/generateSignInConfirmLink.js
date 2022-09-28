@@ -15,6 +15,7 @@ const generateSignInConfirmLink = (userId) => {
     { expiresIn: '30m' }
   )
 
+  //console.log("link",`${process.env.FRONT_URL}/s/${loginUrlToken}`)
   return(
     {
       link: `${process.env.FRONT_URL}/s/${loginUrlToken}`,

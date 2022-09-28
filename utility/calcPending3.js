@@ -20,28 +20,33 @@ const calcPending3 = (expenses, transfers, members) => {
   expenses.map(expense => {
 
     totalSpent = totalSpent.add(expense.amount)
-    
-      //check if expense amount is equal to add of contribution amounts
-      let totalAmountCheck
-       expense.participants.map((shareObject)=>{
-        totalAmountCheck=currency(totalAmountCheck).add(shareObject.contributionAmount)
-      })
-      if (expense.amount!==totalAmountCheck.value) return console.log(totalAmountCheck,'expense amount does not match individual contribution for unequal split')
 
-      expense.participants.map((shareObject) => {
-        spenders.map(spender => {
-          if (spender.id.toString() === shareObject.memberId.toString()) {
-            spender.moneySummedAndDistributed = currency(spender.moneySummedAndDistributed)
-              .add(shareObject.contributionAmount)
-          }
-        })
+    //check if expense amount is equal to add of contribution amounts
+    let totalAmountCheck
+    expense.participants.map((shareObject) => {
+      totalAmountCheck = currency(totalAmountCheck).add(shareObject.contributionAmount)
+    })
+    if (expense.amount !== totalAmountCheck.value) return console.log(totalAmountCheck, 'expense amount does not match individual contribution for unequal split')
+
+    expense.participants.map((shareObject) => {
+      spenders.map(spender => {
+        if (spender.id.toString() === shareObject.memberId.toString()) {
+          spender.moneySummedAndDistributed = currency(spender.moneySummedAndDistributed)
+            .add(shareObject.contributionAmount)
+        }
       })
-    
+    })
 
     // Loop spenders and adjust balances for each expense
-    spenders.map(spender => {
-      if (expense.spender.toString() === spender.id.toString()) {
-        spender.balance = spender.balance.subtract(expense.amount)
+    const expenseSpendersIDs = expense.spenders.map(spender => spender.spenderId).toString()
+    const expenseSpenders = expense.spenders.map(spender => spender)
+    spenders.map((spender) => {
+      const spenderID = spender.id.toString()
+      if (expenseSpendersIDs.includes(spenderID)) {
+        spender.balance =
+          currency(spender.balance).subtract(
+            expenseSpenders.find(spender => spender.spenderId.toString() === spenderID)
+              .spenderAmount)
       }
     })
   })
@@ -62,13 +67,13 @@ const calcPending3 = (expenses, transfers, members) => {
   const debtors = []
   const creditors = []
 
-    //console.log('START') to debug, ucomment all console.logs
+  //console.log('START') //to debug, uncomment all console.logs
   spenders.map((spender) => {
     debtOrCredit = currency(spender.balance).add(spender.moneySummedAndDistributed.value)
     // console.log('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
-     //console.log('moneyArr',spender.moneySummedAndDistributed.value)
-     //console.log('debtOrCredit',debtOrCredit)//check against excel
-     //console.log('balance',spender.balance)
+    // console.log('moneyArr',spender.moneySummedAndDistributed.value)
+    // console.log('debtOrCredit',debtOrCredit)//check against excel
+    // console.log('balance',spender.balance)
     // if debt
     if (debtOrCredit.value > 0) {
       debtors.push({

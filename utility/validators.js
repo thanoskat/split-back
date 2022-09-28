@@ -142,7 +142,8 @@ const checkExpense = (expense) => {
     useNewCustomCheckerFunction: true,
     messages: {
       contributionSumNotEqualAmount: 'Member amounts don\'t add up to total.',
-      amountPositive: 'Amount must be greater than zero'
+      amountPositive: 'Amount must be greater than zero',
+      spenderSumNotEqualAmount:'Payers\' amounts don\'t add up to total.'
     }
   })
 
@@ -160,7 +161,47 @@ const checkExpense = (expense) => {
         return value
       },
     },
-    spender: objectID,
+    paidByMany: {
+      type: 'boolean',
+      custom: (value, errors, schema, name, parent, context) => {
+        const sum = context.data.spenders.reduce((sum, spender) => currency(sum).add(spender.spenderAmount).value, 0)
+        console.log(sum)
+        if (context.data.paidByMany && currency(context.data.amount).value !== sum) {
+          errors.push({
+            type: 'spenderSumNotEqualAmount',
+          })
+        }
+        return value
+      },
+    },
+    spenders: {
+      type: 'array',
+      empty: false,
+      items: {
+        type: 'object',
+        props: {
+          spenderId: objectID,
+          spenderAmount: {
+            type: 'string',
+            // empty: false,
+            // numeric: true,
+            custom: (value, errors, schema, name, parent, context) => {
+              if (context.data.paidByMany) {
+                if (currency(value).value <= 0) {
+                  errors.push({
+                    type: 'amountPositive',
+                  })
+                }
+              }
+              return value
+            },
+          }
+        }
+      },
+      messages: {
+        arrayEmpty: 'At least one payer should be selected'
+      }
+    },
     amount: {
       type: 'string',
       empty: false,

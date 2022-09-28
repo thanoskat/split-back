@@ -14,13 +14,14 @@ const { checkGuest } = require('../utility/validators')
 const { text } = require('body-parser')
 
 const updatePendingTransactions = async (groupId) => {
-  console.log(groupId)
+  //console.log(groupId)
   const group = await groupModel.findById(groupId).exec()
   const result = calcPending3(group.expenses, group.transfers, group.members)
   const updatedGroup = await groupModel.findByIdAndUpdate(groupId, { $set: { pendingTransactions: result.pendingTransactions } }, { upsert: true, returnDocument: 'after' })
     .populate({ path: 'pendingTransactions', populate: { path: 'sender receiver', model: 'Users' } })
     .populate({ path: 'members', model: 'Users' })
-    .populate({ path: 'expenses', populate: { path: 'spender', model: 'Users' } })
+    .populate({ path: 'expenses', populate: { path: 'spender', model: 'Users' } }) //to be replaced
+    .populate({ path: 'expenses', populate: { path: 'spenders', model: 'Users' } })
     .populate({ path: 'transfers', populate: { path: 'sender receiver', model: 'Users' } }).exec()
 
   return (updatedGroup)
@@ -144,7 +145,6 @@ router.post('/addguest', async (req, res) => {
               'upsert': true
             },
           })
-
         }
       })
     })
@@ -211,26 +211,32 @@ router.post('/txhistory', verifyAccessToken, async (req, res) => {
 
   try {
     const group = await groupModel.findOne({ _id: groupID })
+    console.log(group.expenses)
     let history = []
     group.expenses.map((expense) => {
-      if (expense.spender._id.equals(userId)) {
-        const index = expense.participants.findIndex(participant => participant.memberId.equals(userId))//index of user as participant 
-        if (index !== -1) {
-          history.push({ date: expense.createdAt, lent: currency(expense.amount).subtract(expense.participants[index].contributionAmount), borrowed: currency(0) }) //participates hence subtract user's amount from total to get lent
+      expense.spenders.map(spender => {
+        if (spender.spenderId.equals(userId)) {
+          const index = expense.participants.findIndex(participant => participant.memberId.equals(userId))//index of user as participant 
+          if (index !== -1) {
+            history.push({ id: expense._id, date: expense.createdAt, description: expense.description, lent: currency(spender.spenderAmount).subtract(expense.participants[index].contributionAmount), borrowed: currency(0), userPaid: spender.spenderAmount, userShare: expense.participants[index].contributionAmount, isTransfer: false }) //participates hence subtract user's amount from total to get lent
+          } else {
+            history.push({ id: expense._id, date: expense.createdAt, description: expense.description, lent: currency(spender.spenderAmount), borrowed: currency(0), userPaid: spender.spenderAmount, userShare: 0, isTransfer: false }) //doesn't participate (paid for someone else) hence lent the whole amount
+          }
         } else {
-          history.push({ date: expense.createdAt, lent: currency(expense.amount), borrowed: currency(0) }) //doesn't participate (paid for someone else) hence lent the whole amount
+          //borrowed logic
+          const index = expense.participants.findIndex(participant => participant.memberId.equals(userId))
+          if (index !== -1) {
+            history.push({ id: expense._id, date: expense.createdAt, description: expense.description, lent: currency(0), borrowed: expense.participants[index].contributionAmount, userPaid: null, userShare: null, isTransfer: false })
+          }
         }
-      } else {
-        //borrowed logic
-        const index = expense.participants.findIndex(participant => participant.memberId.equals(userId))
-        history.push({ date: expense.createdAt, lent: currency(0), borrowed: expense.participants[index].contributionAmount })
-      }
+      })
     })
+
     group.transfers.map(transfer => {
       if (transfer.sender.equals(userId)) {
-        history.push({ date: transfer.createdAt, lent: currency(transfer.amount), borrowed: currency(0) })
+        history.push({ id: transfer._id, date: transfer.createdAt, description: transfer.description, lent: currency(transfer.amount), borrowed: currency(0), userPaid: null, userShare: null, isTransfer: true })
       } else if (transfer.receiver.equals(userId)) {
-        history.push({ date: transfer.createdAt, lent: currency(0), borrowed: currency(transfer.amount) })
+        history.push({ id: transfer._id, date: transfer.createdAt, description: transfer.description, lent: currency(0), borrowed: currency(transfer.amount), userPaid: null, userShare: null, isTransfer: true })
       } else {
         return
       }
@@ -251,22 +257,33 @@ router.post('/txhistory', verifyAccessToken, async (req, res) => {
     for (let i = 2; i < history.length; i++) {
       history[i].totalLent = currency(history[i - 1].totalLent).add(history[i].lent)
       history[i].totalBorrowed = currency(history[i - 1].totalBorrowed).add(history[i].borrowed)
-      history[i].balane = currency(history[i].totalLent).subtract(history[i].totalBorrowed)
+      history[i].balance = currency(history[i].totalLent).subtract(history[i].totalBorrowed)
     }
 
     res.send(history)
   } catch (err) {
+    console.log(err)
     res.sendStatus(500)
   }
 })
 
 router.post('/add', verifyAccessToken, async (req, res) => {
+  //can we avoid sending paidByMany in DB?
+  //try fix row 274 from front
   try {
-    req.body.newExpense.spender = req.body.newExpense.spender
+    req.body.newExpense.spenders = req.body.newExpense.spenders
+    if (req.body.newExpense.spenders.length === 1) {
+      req.body.newExpense.spenders[0].spenderAmount = req.body.newExpense.amount
+      req.body.newExpense.paidByMany = false
+    } else if (req.body.newExpense.spenders.length > 1) {
+      req.body.newExpense.paidByMany = true
+    }
+
     const checkExpenseResult = checkExpense(req.body.newExpense)
     console.log(checkExpenseResult)
     if (Array.isArray(checkExpenseResult)) return res.status(200).send({ validationArray: checkExpenseResult })
     req.body.newExpense.amount = currency(req.body.newExpense.amount).value
+
     if (req.body.newExpense.splitEqually === false) {
       req.body.newExpense.participants = req.body.newExpense.participants.map(participant => ({ ...participant, contributionAmount: currency(participant.contributionAmount).value }))
     } else {
@@ -274,7 +291,6 @@ router.post('/add', verifyAccessToken, async (req, res) => {
         .distribute(req.body.newExpense.participants.length).map(e => e.value)
       req.body.newExpense.participants = req.body.newExpense.participants.map((participant, index) => ({ ...participant, contributionAmount: distributedAmountArray[index] }))
     }
-
 
     await groupModel.findByIdAndUpdate(req.body.newExpense.groupId, { $push: { expenses: req.body.newExpense } }).exec()
     const updatedGroup = await updatePendingTransactions(req.body.newExpense.groupId)
@@ -288,7 +304,14 @@ router.post('/add', verifyAccessToken, async (req, res) => {
 
 router.post('/edit', verifyAccessToken, async (req, res) => {
   try {
-    req.body.newExpense.spender = req.body.newExpense.spender
+    req.body.newExpense.spenders = req.body.newExpense.spenders
+    if (req.body.newExpense.spenders.length === 1) {
+      req.body.newExpense.spenders[0].spenderAmount = req.body.newExpense.amount
+      req.body.newExpense.paidByMany = false
+    } else if (req.body.newExpense.spenders.length > 1) {
+      req.body.newExpense.paidByMany = true
+    }
+
     const checkExpenseResult = checkExpense(req.body.newExpense)
     console.log(checkExpenseResult)
     if (Array.isArray(checkExpenseResult)) return res.status(200).send({ validationArray: checkExpenseResult })
