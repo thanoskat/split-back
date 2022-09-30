@@ -211,56 +211,64 @@ router.post('/txhistory', verifyAccessToken, async (req, res) => {
 
   try {
     const group = await groupModel.findOne({ _id: groupID })
-    console.log(group.expenses)
     let history = []
-    group.expenses.map((expense) => {
-      expense.spenders.map(spender => {
-        if (spender.spenderId.equals(userId)) {
+    if (group.expenses.length === 0) { res.send(history) } else {
+      group.expenses.map((expense) => {
+        if (expense.spenders.map(spender => spender.spenderId.toString()).includes(userId.toString())) {//if user is in spenders array
+          const spender = expense.spenders.map(spender => spender).find(spender => spender.spenderId.toString() === userId.toString()) //spender is the spender with userId
           const index = expense.participants.findIndex(participant => participant.memberId.equals(userId))//index of user as participant 
-          if (index !== -1) {
+          if (index !== -1) {//if user participates, subtract lent amount from total he paid
             history.push({ id: expense._id, date: expense.createdAt, description: expense.description, lent: currency(spender.spenderAmount).subtract(expense.participants[index].contributionAmount), borrowed: currency(0), userPaid: spender.spenderAmount, userShare: expense.participants[index].contributionAmount, isTransfer: false }) //participates hence subtract user's amount from total to get lent
-          } else {
+          } else { //else user lent the whole amount
             history.push({ id: expense._id, date: expense.createdAt, description: expense.description, lent: currency(spender.spenderAmount), borrowed: currency(0), userPaid: spender.spenderAmount, userShare: 0, isTransfer: false }) //doesn't participate (paid for someone else) hence lent the whole amount
           }
-        } else {
+        }
+        else { //if not a spender then assess if is a borrower
           //borrowed logic
           const index = expense.participants.findIndex(participant => participant.memberId.equals(userId))
-          if (index !== -1) {
+          if (index !== -1) { //if found in participants is a borrower
             history.push({ id: expense._id, date: expense.createdAt, description: expense.description, lent: currency(0), borrowed: expense.participants[index].contributionAmount, userPaid: null, userShare: null, isTransfer: false })
-          }
+          } //if not, do nothing
         }
       })
-    })
 
-    group.transfers.map(transfer => {
-      if (transfer.sender.equals(userId)) {
-        history.push({ id: transfer._id, date: transfer.createdAt, description: transfer.description, lent: currency(transfer.amount), borrowed: currency(0), userPaid: null, userShare: null, isTransfer: true })
-      } else if (transfer.receiver.equals(userId)) {
-        history.push({ id: transfer._id, date: transfer.createdAt, description: transfer.description, lent: currency(0), borrowed: currency(transfer.amount), userPaid: null, userShare: null, isTransfer: true })
+      group.transfers.map(transfer => {
+        if (transfer.sender.equals(userId)) {
+          history.push({ id: transfer._id, date: transfer.createdAt, description: transfer.description, lent: currency(transfer.amount), borrowed: currency(0), userPaid: null, userShare: null, isTransfer: true })
+        } else if (transfer.receiver.equals(userId)) {
+          history.push({ id: transfer._id, date: transfer.createdAt, description: transfer.description, lent: currency(0), borrowed: currency(transfer.amount), userPaid: null, userShare: null, isTransfer: true })
+        } else {
+          return
+        }
+      })
+
+      history.sort((a, b) => {
+        return a.date - b.date
+      })
+
+
+      if (history.length === 1) {
+        history[0].totalLent = history[0].lent
+        history[0].totalBorrowed = history[0].borrowed
+        history[0].balance = currency(history[0].lent).subtract(history[0].borrowed)
+
       } else {
-        return
+        history[0].totalLent = history[0].lent
+        history[0].totalBorrowed = history[0].borrowed
+        history[0].balance = currency(history[0].lent).subtract(history[0].borrowed)
+
+        history[1].totalLent = currency(history[0].lent).add(history[1].lent)
+        history[1].totalBorrowed = currency(history[0].borrowed).add(history[1].borrowed)
+        history[1].balance = currency(history[1].totalLent).subtract(history[1].totalBorrowed)
+
+        for (let i = 2; i < history.length; i++) {
+          history[i].totalLent = currency(history[i - 1].totalLent).add(history[i].lent)
+          history[i].totalBorrowed = currency(history[i - 1].totalBorrowed).add(history[i].borrowed)
+          history[i].balance = currency(history[i].totalLent).subtract(history[i].totalBorrowed)
+        }
       }
-    })
-
-    history.sort((a, b) => {
-      return a.date - b.date
-    })
-
-    history[0].totalLent = history[0].lent
-    history[0].totalBorrowed = history[0].borrowed
-    history[0].balance = currency(history[0].lent).subtract(history[0].borrowed)
-
-    history[1].totalLent = currency(history[0].lent).add(history[1].lent)
-    history[1].totalBorrowed = currency(history[0].borrowed).add(history[1].borrowed)
-    history[1].balance = currency(history[1].totalLent).subtract(history[1].totalBorrowed)
-
-    for (let i = 2; i < history.length; i++) {
-      history[i].totalLent = currency(history[i - 1].totalLent).add(history[i].lent)
-      history[i].totalBorrowed = currency(history[i - 1].totalBorrowed).add(history[i].borrowed)
-      history[i].balance = currency(history[i].totalLent).subtract(history[i].totalBorrowed)
+      res.send(history)
     }
-
-    res.send(history)
   } catch (err) {
     console.log(err)
     res.sendStatus(500)
