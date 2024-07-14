@@ -294,11 +294,8 @@ router.post('/sign-in', async (req, res) => {
       }
       if (userFound) {
         try {
+          console.log("USERFOUND")
           userIdFromUnique = userFound._id.toString()
-        }
-        catch (error) {
-          console.log("userFound ERROR")
-          return res.status(500).send({ message: error.message })
         }
       }
       else {
@@ -306,7 +303,7 @@ router.post('/sign-in', async (req, res) => {
       }
     })
 
-    console.log("userIdFromUnique", userIdFromUnique)
+    console.log(userIdFromUnique)
     
     const fakeUnique = generateRefreshToken()
     const refreshToken = generateRefreshToken()
