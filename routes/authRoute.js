@@ -202,7 +202,9 @@ router.post('/request-sign-in', async (req, res) => {
     if (userFound) {
       try {
         const { link, unique } = generateSignInConfirmLink(userFound._id.toString())
-        emailHandler.sendSignInLink(req.body.email, link, ip, userAgent)
+        
+        // BEFORE BYPASS
+        // emailHandler.sendSignInLink(req.body.email, link, ip, userAgent)
 
         res.setHeader('Set-Cookie', cookie.serialize(
           'unique',
