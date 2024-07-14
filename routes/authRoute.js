@@ -293,10 +293,8 @@ router.post('/sign-in', async (req, res) => {
         return res.status(500).send({ message: error._message })
       }
       if (userFound) {
-        try {
-          console.log("USERFOUND")
-          userIdFromUnique = userFound._id.toString()
-        }
+        console.log("USERFOUND")
+        userIdFromUnique = userFound._id.toString()
       }
       else {
         return res.status(401).send({ message: 'No account found associated with this email address.' })
