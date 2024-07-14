@@ -285,21 +285,9 @@ router.post('/sign-in', async (req, res) => {
     // BEFORE BYPASS END
 
     // AFTER BYPASS START
-    var userIdFromUnique
     console.log(unique)
-    userModel.findOne({ email: unique }, (error, userFound) => {
-      if (error) {
-        console.log(error._message)
-        return res.status(500).send({ message: error._message })
-      }
-      if (userFound) {
-        console.log("USERFOUND")
-        userIdFromUnique = userFound._id.toString()
-      }
-      else {
-        return res.status(401).send({ message: 'No account found associated with this email address.' })
-      }
-    })
+
+    const userFound = await userModel.findOne({ email: req.body.email }).exec()
 
     console.log(userIdFromUnique)
     
@@ -307,7 +295,7 @@ router.post('/sign-in', async (req, res) => {
     const refreshToken = generateRefreshToken()
     const newSession = new sessionModel({
       refreshToken: refreshToken,
-      userId: userIdFromUnique,
+      userId: userFound._id.toString(),
       unique: fakeUnique,
       createdAt: Date.now()
     })
