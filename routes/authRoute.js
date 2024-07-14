@@ -288,9 +288,7 @@ router.post('/sign-in', async (req, res) => {
     console.log(unique)
 
     const userFound = await userModel.findOne({ email: req.body.email }).exec()
-
-    console.log(userIdFromUnique)
-    
+    console.log(userFound)
     const fakeUnique = generateRefreshToken()
     const refreshToken = generateRefreshToken()
     const newSession = new sessionModel({
