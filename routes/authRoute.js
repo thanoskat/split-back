@@ -285,7 +285,7 @@ router.post('/sign-in', async (req, res) => {
     // BEFORE BYPASS END
 
     // AFTER BYPASS START
-    const fakeUnique = generateRefreshToken()
+    var userIdFromUnique
     userModel.findOne({ email: unique }, (error, userFound) => {
       if (error) {
         console.log(error._message)
@@ -293,23 +293,7 @@ router.post('/sign-in', async (req, res) => {
       }
       if (userFound) {
         try {
-          const refreshToken = generateRefreshToken()
-          const newSession = new sessionModel({
-            refreshToken: refreshToken,
-            userId: userFound._id.toString(),
-            unique: fakeUnique,
-            createdAt: Date.now()
-          })
-          newSession.save((error, savedSession) => {
-            if (error) {
-              return res.status(500).send({ message: error._message })
-            }
-            else {
-              return res.status(200).send({ type: 'sign-in' })
-            }
-          })
-          
-          return res.sendStatus(200)
+          userIdFromUnique = userFound._id.toString()
         }
         catch (error) {
           return res.status(500).send({ message: error.message })
@@ -317,6 +301,23 @@ router.post('/sign-in', async (req, res) => {
       }
       else {
         return res.status(401).send({ message: 'No account found associated with this email address.' })
+      }
+    })
+    
+    const fakeUnique = generateRefreshToken()
+    const refreshToken = generateRefreshToken()
+    const newSession = new sessionModel({
+      refreshToken: refreshToken,
+      userId: userIdFromUnique,
+      unique: fakeUnique,
+      createdAt: Date.now()
+    })
+    newSession.save((error, savedSession) => {
+      if (error) {
+        return res.status(500).send({ message: error._message })
+      }
+      else {
+        return res.status(200).send({ type: 'sign-in' })
       }
     })
 
