@@ -287,9 +287,11 @@ router.post('/sign-in', async (req, res) => {
     // AFTER BYPASS START
     console.log(unique)
 
-    const userFound = await userModel.findOne({ email: req.body.email }).exec()
+    const userFound = await userModel.findOne({ email: unique }).exec()
     console.log(userFound)
     const fakeUnique = generateRefreshToken()
+    console.log("fakeUnique")
+    console.log(fakeUnique)
     const refreshToken = generateRefreshToken()
     const newSession = new sessionModel({
       refreshToken: refreshToken,
