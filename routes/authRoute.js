@@ -286,6 +286,7 @@ router.post('/sign-in', async (req, res) => {
 
     // AFTER BYPASS START
     var userIdFromUnique
+    console.log(unique)
     userModel.findOne({ email: unique }, (error, userFound) => {
       if (error) {
         console.log(error._message)
