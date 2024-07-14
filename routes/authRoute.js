@@ -296,6 +296,7 @@ router.post('/sign-in', async (req, res) => {
           userIdFromUnique = userFound._id.toString()
         }
         catch (error) {
+          console.log("userFound ERROR")
           return res.status(500).send({ message: error.message })
         }
       }
@@ -303,6 +304,8 @@ router.post('/sign-in', async (req, res) => {
         return res.status(401).send({ message: 'No account found associated with this email address.' })
       }
     })
+
+    console.log("userIdFromUnique", userIdFromUnique)
     
     const fakeUnique = generateRefreshToken()
     const refreshToken = generateRefreshToken()
@@ -315,9 +318,6 @@ router.post('/sign-in', async (req, res) => {
     newSession.save((error, savedSession) => {
       if (error) {
         return res.status(500).send({ message: error._message })
-      }
-      else {
-        return res.status(200).send({ type: 'sign-in' })
       }
     })
 
