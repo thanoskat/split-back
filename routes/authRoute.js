@@ -206,7 +206,8 @@ router.post('/request-sign-in', async (req, res) => {
 
         res.setHeader('Set-Cookie', cookie.serialize(
           'unique',
-          unique,
+          // BEFORE BYPASS unique,
+          req.body.email, // AFTER BYPASS
           {
             sameSite: 'Lax',
             httpOnly: true,
@@ -275,8 +276,32 @@ router.post('/sign-in', async (req, res) => {
 
     //  DO NOT DELETE
     // const session = await sessionModel.findOneAndUpdate({ unique: unique }, { $unset: { unique: unique }}).exec()
+
+    // BEFORE BYPASS START
+    // const session = await sessionModel.findOne({ unique: unique }).exec()
+    // if (!session) return res.status(401).send({ message: 'Click the link in your email before you continue.' })
+    // BEFORE BYPASS END
+
+    // AFTER BYPASS START
+    const fakeUnique = generateRefreshToken()
+    const refreshToken = generateRefreshToken()
+    const newSession = new sessionModel({
+      refreshToken: refreshToken,
+      userId: unique,
+      unique: fakeUnique,
+      createdAt: Date.now()
+    })
+    newSession.save((error, savedSession) => {
+      if (error) {
+        return res.status(500).send({ message: error._message })
+      }
+      else {
+        return res.status(200).send({ type: 'sign-in' })
+      }
+    })
     const session = await sessionModel.findOne({ unique: unique }).exec()
     if (!session) return res.status(401).send({ message: 'Click the link in your email before you continue.' })
+    // AFTER BYPASS END
 
     const accessToken = generateAccessToken(session.userId)
     const user = await userModel.findById(session.userId).exec()
