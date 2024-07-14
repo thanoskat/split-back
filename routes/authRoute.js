@@ -283,23 +283,42 @@ router.post('/sign-in', async (req, res) => {
     // BEFORE BYPASS END
 
     // AFTER BYPASS START
-    const fakeUnique = generateRefreshToken()
-    const refreshToken = generateRefreshToken()
-    const newSession = new sessionModel({
-      refreshToken: refreshToken,
-      userId: unique,
-      unique: fakeUnique,
-      createdAt: Date.now()
-    })
-    newSession.save((error, savedSession) => {
+    userModel.findOne({ email: unique }, (error, userFound) => {
       if (error) {
+        console.log(error._message)
         return res.status(500).send({ message: error._message })
       }
+      if (userFound) {
+        try {
+          const fakeUnique = generateRefreshToken()
+          const refreshToken = generateRefreshToken()
+          const newSession = new sessionModel({
+            refreshToken: refreshToken,
+            userId: userFound._id.toString(),
+            unique: fakeUnique,
+            createdAt: Date.now()
+          })
+          newSession.save((error, savedSession) => {
+            if (error) {
+              return res.status(500).send({ message: error._message })
+            }
+            else {
+              return res.status(200).send({ type: 'sign-in' })
+            }
+          })
+          
+          return res.sendStatus(200)
+        }
+        catch (error) {
+          return res.status(500).send({ message: error.message })
+        }
+      }
       else {
-        return res.status(200).send({ type: 'sign-in' })
+        return res.status(401).send({ message: 'No account found associated with this email address.' })
       }
     })
-    const session = await sessionModel.findOne({ unique: unique }).exec()
+
+    const session = await sessionModel.findOne({ unique: fakeUnique }).exec()
     if (!session) return res.status(401).send({ message: 'Click the link in your email before you continue.' })
     // AFTER BYPASS END
 
