@@ -297,11 +297,7 @@ router.post('/sign-in', async (req, res) => {
       unique: fakeUnique,
       createdAt: Date.now()
     })
-    newSession.save((error, savedSession) => {
-      if (error) {
-        return res.status(500).send({ message: error._message })
-      }
-    })
+    await newSession.save()
 
     const session = await sessionModel.findOne({ unique: fakeUnique }).exec()
     if (!session) return res.status(401).send({ message: 'Click the link in your email before you continue.' })
